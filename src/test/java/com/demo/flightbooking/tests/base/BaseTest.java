@@ -118,7 +118,7 @@ public class BaseTest {
         // Set MDC context at the start of each test method to ensure correct logging
         String mdcSuite = System.getProperty("test.suite", "unknown");
         String mdcBrowser = (browser != null && !browser.isBlank()) ? browser.toUpperCase() : "UNKNOWN";
-        String customThreadName = "TestNG-test-Regression-" + browser.toLowerCase() + "-1";
+        String customThreadName = "TestNG-test-" + mdcSuite.toLowerCase() + "-" + browser.toLowerCase() + "-1";
         
         // Set actual thread name so log4j %X{thread} picks it up correctly
         Thread.currentThread().setName(customThreadName);
