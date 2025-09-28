@@ -15,6 +15,7 @@ import java.util.List;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.ThreadContext;
 import org.openqa.selenium.WebDriver;
 import org.testng.ITestResult;
 import org.testng.annotations.*;
@@ -114,6 +115,12 @@ public class BaseTest {
     @Parameters("browser")
     @BeforeMethod(alwaysRun = true)
     public void setUp(String browser, Method method) {
+        // Set MDC context at the start of each test method to ensure correct logging
+        String mdcSuite = System.getProperty("test.suite", "unknown");
+        String mdcBrowser = (browser != null && !browser.isBlank()) ? browser.toUpperCase() : "UNKNOWN";
+        ThreadContext.put("suite", mdcSuite.toUpperCase());
+        ThreadContext.put("browser", mdcBrowser);
+
         DriverManager.setBrowser(browser);
         DriverManager.getDriver(); // Launch browser
         logger.info("🚀 WebDriver initialized for test: {}", method.getName());
