@@ -119,9 +119,12 @@ public class BaseTest {
         String mdcSuite = System.getProperty("test.suite", "unknown");
         String mdcBrowser = (browser != null && !browser.isBlank()) ? browser.toUpperCase() : "UNKNOWN";
         String customThreadName = "TestNG-test-Regression-" + browser.toLowerCase() + "-1";
+        
+        // Set actual thread name so log4j %X{thread} picks it up correctly
+        Thread.currentThread().setName(customThreadName);
+        
         ThreadContext.put("suite", mdcSuite.toUpperCase());
         ThreadContext.put("browser", mdcBrowser);
-        ThreadContext.put("thread", customThreadName);
 
         DriverManager.setBrowser(browser);
         DriverManager.getDriver(); // Launch browser

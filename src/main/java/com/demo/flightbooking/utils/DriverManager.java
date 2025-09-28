@@ -135,9 +135,8 @@ public class DriverManager {
                 logger.warn("quitDriver called but thread-local WebDriver was null.");
             }
         } finally {
-            // ADDED: Clear only browser and custom thread MDC to prevent leakage, preserve suite MDC
+            // ADDED: Clear only browser MDC to prevent leakage, preserve suite MDC
             ThreadContext.remove("browser"); // Instead of clearMap()
-            ThreadContext.remove("thread");
             driver.remove();
             browserName.remove();
         }
