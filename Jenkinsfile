@@ -161,17 +161,18 @@ pipeline {
                 }
             }
         }
-    }
 
-    post {
-        // 'always' ensures these steps run regardless of the build's success or failure.
-        always {
-            script {
-				// Add this line for debugging
-				echo "DEBUG: Suite name at start of post-build is '${env.SUITE_TO_RUN}'"
-				// Use the 'inside' step to run all cleanup, reporting, and notifications inside our container.
-				// This is needed because we're using 'agent none' at the top level.
-                docker.image('flight-booking-agent:latest').inside('-u root -v /var/run/docker.sock:/var/run/docker.sock --entrypoint=""') {
+        stage('Post-Build Actions') {
+            when { branch 'enhancements' }
+            agent {
+                docker {
+                    image 'flight-booking-agent:latest'
+                    args '-u root -v /var/run/docker.sock:/var/run/docker.sock --entrypoint=""'
+                }
+            }
+            steps {
+                script {
+                    echo "DEBUG: Suite name at start of post-build is '${env.SUITE_TO_RUN}'"
 
                     if (env.BRANCH_NAME == 'enhancements') {
                         echo '🧹 Shutting down Selenium Grid...'
@@ -181,7 +182,7 @@ pipeline {
                     echo "📦 Generating dashboard for suite: ${env.SUITE_TO_RUN}"
                     generateDashboard(env.SUITE_TO_RUN, "${env.BUILD_NUMBER}")
                     archiveAndPublishReports()
-					
+
 					// ✅ This condition is now more flexible. As your project grows, you can add
 					 // other important branches like 'main' or 'release' to this list.
 
@@ -215,25 +216,5 @@ pipeline {
             }
         }
 
-        // The 'failure' block provides an extra layer of cleanup specifically for failed builds.
-		failure {
-            script {
-                docker.image('flight-booking-agent:latest').inside('-u root -v /var/run/docker.sock:/var/run/docker.sock --entrypoint=""') {
-                    echo '⚠️ Build failed. Forcing Selenium Grid cleanup...'
-                    try {
-						// ✅ Detect leftover Selenium containers and stop them to prevent grid pollution
-                        def result = sh(script: 'docker ps -a --filter "name=selenium" --format "{{.Names}}"', returnStdout: true).trim()
-                        if (result) {
-                            echo "🛑 Stopping containers:\n${result}"
-                            stopDockerGrid('docker-compose-grid.yml')
-                        } else {
-                            echo "✅ No active Selenium containers found to stop."
-                        }
-                    } catch (e) {
-                        echo "⚠️ Docker cleanup error: ${e.getMessage()}"
-                    }
-                }
-            }
-        }
-    }
+}
 }
