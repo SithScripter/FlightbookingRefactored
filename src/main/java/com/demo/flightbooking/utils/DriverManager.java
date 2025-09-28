@@ -141,8 +141,8 @@ public class DriverManager {
                 logger.warn("quitDriver called but thread-local WebDriver was null.");
             }
         } finally {
-            // ADDED: Ensure MDC does not leak when TestNG reuses threads
-            ThreadContext.clearMap(); // ADDED
+            // ADDED: Clear only browser MDC to prevent leakage, preserve suite MDC
+            ThreadContext.remove("browser"); // Instead of clearMap()
             driver.remove();
             browserName.remove();
         }
