@@ -1,0 +1,51 @@
+# 🧪 This Docker Compose file is intended to be used in Jenkins for spinning up a local Selenium Grid before running automated tests
+# The version is at the top level
+#version: '3.8' 
+
+services:
+  # 🧠 Central Hub – handles session distribution to browser nodes
+  selenium-hub:
+    image: selenium/hub:4.27
+#    ports:
+#      - "4442:4442"
+#      - "4443:4443"
+#      - "4444:4444"
+    networks:
+      - grid
+    environment:
+      - GRID_TIMEOUT=60             # Hub waits 60s before timing out a session
+      - GRID_CLEAN_UP_CYCLE=60      # Cleans up stale sessions every 60s
+    
+  # 🧭 Chrome Node – capable of handling up to 2 parallel sessions
+  chrome:
+    image: selenium/node-chromium:4.27
+    shm_size: "2g"                  # Prevents Chrome crashes due to memory
+    depends_on:
+      - selenium-hub
+    environment:
+      - SE_EVENT_BUS_HOST=selenium-hub
+      - SE_EVENT_BUS_PUBLISH_PORT=4442
+      - SE_EVENT_BUS_SUBSCRIBE_PORT=4443
+      - SE_NODE_OVERRIDE_MAX_SESSIONS=true  # Allows overriding default
+      - SE_NODE_MAX_SESSIONS=1              # Run 2 Chrome tests in parallel
+    networks:
+      - grid
+
+  # 🦊 Firefox Node – capable of handling up to 2 parallel sessions
+  firefox:
+    image: selenium/node-firefox:4.27
+    shm_size: "2g"
+    depends_on:
+      - selenium-hub
+    environment:
+      - SE_EVENT_BUS_HOST=selenium-hub
+      - SE_EVENT_BUS_PUBLISH_PORT=4442
+      - SE_EVENT_BUS_SUBSCRIBE_PORT=4443
+      - SE_NODE_OVERRIDE_MAX_SESSIONS=true
+      - SE_NODE_MAX_SESSIONS=1
+    networks:
+      - grid
+
+networks:
+  grid:
+    name: selenium_grid_network

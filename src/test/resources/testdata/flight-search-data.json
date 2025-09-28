@@ -1,0 +1,14 @@
+[
+  {
+    "origin": "Mexico City",
+    "destination": "London"
+  },
+  {
+    "origin": "Paris",
+    "destination": "Rome"
+  },
+  {
+    "origin": "Boston",
+    "destination": "Dublin"
+  }
+]

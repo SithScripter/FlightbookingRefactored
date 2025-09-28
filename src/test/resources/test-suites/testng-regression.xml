@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd">
+<suite name="Regression Suite" parallel="tests" thread-count="2" preserve-order="true" configfailurepolicy="continue">
+    <listeners>
+        <listener class-name="com.demo.flightbooking.listeners.TestListener"/>
+    </listeners>
+
+    <parameter name="test.suite" value="regression"/>
+
+    <test name="Regression-Chrome" parallel="classes" thread-count="1">
+        <parameter name="browser" value="chrome"/>
+        <classes>
+            <class name="com.demo.flightbooking.tests.booking.EndToEndBookingTest"/>
+        </classes>
+    </test>
+
+    <test name="Regression-Firefox" parallel="classes" thread-count="1">
+        <parameter name="browser" value="firefox"/>
+        <classes>
+            <class name="com.demo.flightbooking.tests.booking.EndToEndBookingTest"/>
+        </classes>
+    </test>
+</suite>
