@@ -16,6 +16,7 @@ import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.openqa.selenium.WebDriver;
+import org.testng.ITestContext;
 import org.testng.ITestResult;
 import org.testng.annotations.*;
 
@@ -37,7 +38,7 @@ public class BaseTest {
 
     protected static final Logger logger = LogManager.getLogger(BaseTest.class);
 
-    // Thread-safe report instance for parallel execution (each browser runs in isolated thread)
+    // Thread-safe report instance for parallel execution
     private static final ThreadLocal<ExtentReports> extentReports = new ThreadLocal<>();
 
     // Shared list of failure summaries (thread-safe)
@@ -46,7 +47,7 @@ public class BaseTest {
 
     /**
      * This method runs once before the entire test suite.
-     * It sets up the ExtentReports instance and configures the report's appearance.
+     * It cleans up old failure summary files.
      */
     @BeforeSuite(alwaysRun = true)
     public void setUpSuite() {
@@ -55,45 +56,42 @@ public class BaseTest {
             logsDir.mkdirs();
         }
         logger.info("✅ Logs directory ensured.");
-        
-        // ✅ Read the suite name from the system property passed by Maven
-        String suiteName = System.getProperty("test.suite", "default"); 
 
-        // ✅ Build the filename dynamically
+        String suiteName = System.getProperty("test.suite", "default");
         File oldSummary = new File("reports/" + suiteName + "-failure-summary.txt");
         if (oldSummary.exists()) {
             oldSummary.delete();
-            logger.info("🧹 Old failure summary deleted.");
+            logger.info("🧹 Old failure summary for suite '{}' deleted.", suiteName);
         }
     }
 
     /**
-     * ✅ Runs once per <test> tag in testng XML.
-     * Creates a unique ExtentSparkReporter per browser/stage.
+     * ✅ Runs once per <test> tag in testng.xml.
+     * This is the ideal place to set up resources that are specific to a <test> tag,
+     * such as the browser and the ExtentReport for that browser.
+     *
+     * @param browser The browser name passed from the testng.xml file.
+     * @param context The ITestContext provided by TestNG, which contains information about the current test run.
      */
     @Parameters("browser")
-    @BeforeClass(alwaysRun = true)
-    public void setUpClass(String browser) {
-        // Set browser for current thread
+    @BeforeTest(alwaysRun = true)
+    public void setUpTest(String browser, ITestContext context) {
+        // Set the browser for the current thread. This is crucial for parallel execution.
         DriverManager.setBrowser(browser);
-        logger.info("✅ Browser set to: {} for test class: {}", browser.toUpperCase(), this.getClass().getSimpleName());
+        logger.info("Setting up test: '{}' | Browser: {}", context.getName(), browser.toUpperCase());
 
-        // Determine suite and report directory (e.g., chrome or firefox)
-        String reportDir = System.getProperty("report.dir", browser); // fallback to browser
+        String reportDir = browser.toLowerCase();
         String suiteName = System.getProperty("test.suite", "default");
 
         String reportPath = "reports/" + reportDir + "/";
-        new File(reportPath).mkdirs(); // Ensure folder exists
+        new File(reportPath).mkdirs();
 
-        // 👇 File name like regression-chrome-report.html
         String reportFileName = suiteName + "-" + reportDir + "-report.html";
 
-        // Create and configure ExtentSparkReporter
         ExtentSparkReporter sparkReporter = new ExtentSparkReporter(reportPath + reportFileName);
         sparkReporter.config().setOfflineMode(true);
-        sparkReporter.config().setDocumentTitle("Test Report: " + suiteName.toUpperCase() + " - " + reportDir.toUpperCase());
+        sparkReporter.config().setDocumentTitle("Test Report: " + suiteName.toUpperCase() + " - " + browser.toUpperCase());
 
-        // Create new ExtentReports and attach reporter
         ExtentReports reports = new ExtentReports();
         reports.attachReporter(sparkReporter);
         reports.setSystemInfo("Tester", ConfigReader.getProperty("tester.name"));
@@ -101,105 +99,106 @@ public class BaseTest {
         reports.setSystemInfo("Java Version", System.getProperty("java.version"));
         extentReports.set(reports);
 
-        logger.info("✅ Report will be generated at: {}/{}", reportPath, reportFileName);
+        logger.info("✅ Report for {} will be generated at: {}/{}", browser.toUpperCase(), reportPath, reportFileName);
     }
 
     /**
-     * This method runs before each test method.
-     * It initializes the WebDriver instance for the current thread and creates a new
-     * test entry in the ExtentReport.
+     * This method runs before each @Test method.
+     * It initializes the WebDriver and creates a new test entry in the ExtentReport.
      *
      * @param method The test method that is about to be run.
      */
-    @Parameters("browser")
     @BeforeMethod(alwaysRun = true)
-    public void setUp(String browser, Method method) {
-        DriverManager.setBrowser(browser);
-        DriverManager.getDriver(); // Launch browser
-        logger.info("🚀 WebDriver initialized for test: {}", method.getName());
-
+    public void setUpMethod(Method method) {
+        // The browser is already set in the ThreadLocal from @BeforeTest
+        DriverManager.getDriver();
         String browserName = DriverManager.getBrowser().toUpperCase();
+        logger.info("🚀 WebDriver initialized for test: {} on {}", method.getName(), browserName);
 
-        // Create a test entry in report
         ExtentTest test = extentReports.get().createTest(method.getName() + " - " + browserName);
         ExtentManager.setTest(test);
-        logger.info("📝 ExtentTest created for test: {} on {}", method.getName(), browserName);
+        logger.info("📝 ExtentTest created for: {} on {}", method.getName(), browserName);
     }
 
     /**
-     * This method runs after each test method.
-     * It checks the test result, takes a screenshot on failure, logs the status
-     * in the report, and then quits the WebDriver instance for the current thread.
+     * This method runs after each @Test method.
+     * It handles test result logging, takes screenshots on failure, and quits the WebDriver.
      *
      * @param result The result of the test method that has just run.
      */
     @AfterMethod(alwaysRun = true)
-    public void tearDown(ITestResult result) {
+    public void tearDownMethod(ITestResult result) {
         ExtentTest test = ExtentManager.getTest();
-        WebDriver driver = DriverManager.getDriver();
+        WebDriver driver = DriverManager.getDriver(); // Get driver before quitting
 
         if (test != null) {
             if (result.getStatus() == ITestResult.FAILURE) {
                 String failureMsg = "❌ " + result.getMethod().getMethodName()
-                        + " FAILED: " + result.getThrowable().getMessage().split("\n")[0];
+                        + " FAILED on " + DriverManager.getBrowser().toUpperCase()
+                        + ": " + result.getThrowable().getMessage().split("\n")[0];
                 failureSummaries.add(failureMsg);
 
                 String screenshotPath = ScreenshotUtils.captureScreenshot(driver, result.getMethod().getMethodName());
                 test.addScreenCaptureFromPath("./screenshots/" + new File(screenshotPath).getName());
                 test.fail(result.getThrowable());
                 logger.error("❌ Test failed: {} | Screenshot: {}", result.getMethod().getMethodName(), screenshotPath);
-            } else {
+            } else if (result.getStatus() == ITestResult.SUCCESS) {
                 test.log(Status.PASS, "✅ Test passed");
+            } else if (result.getStatus() == ITestResult.SKIP) {
+                test.log(Status.SKIP, "🚫 Test skipped");
             }
         }
 
         DriverManager.quitDriver();
-        logger.info("🧹 WebDriver quit after test: {}", result.getMethod().getMethodName());
+        logger.info("🧹 WebDriver quit for test: {}", result.getMethod().getMethodName());
         ExtentManager.unload();
     }
 
     /**
-     * ✅ Runs once per <test> tag completion.
-     * Flushes report and copies it to index.html for Jenkins if needed.
+     * ✅ Runs once after all tests in a <test> tag have completed.
+     * Flushes the report, writes the failure summary, and copies the report for Jenkins display.
      */
-    @AfterClass(alwaysRun = true)
-    public void tearDownClass() {
+    @AfterTest(alwaysRun = true)
+    public void tearDownTest() {
         if (extentReports.get() != null) {
             extentReports.get().flush();
-            logger.info("✅ ExtentReports flushed to disk.");
+            logger.info("✅ ExtentReports flushed for browser: {}", DriverManager.getBrowser().toUpperCase());
         }
 
-        // Optional logic to write summary and copy report
-        String reportDir = System.getProperty("report.dir", "default");
+        String browser = DriverManager.getBrowser().toLowerCase();
         String suiteName = System.getProperty("test.suite", "default");
-        String reportPath = "reports/" + reportDir + "/";
-        String reportFileName = suiteName + "-" + reportDir + "-report.html";
-        String mergedSummaryFile = "reports/" + suiteName + "-failure-summary.txt";
+        String reportPath = "reports/" + browser + "/";
+        String reportFileName = suiteName + "-" + browser + "-report.html";
 
-        if (!failureSummaries.isEmpty()) {
-            try {
-                File file = new File(mergedSummaryFile);
-                file.getParentFile().mkdirs(); // Ensure reports/ exists
-                try (PrintWriter out = new PrintWriter(new FileWriter(file, true))) { // append mode
-                    failureSummaries.forEach(out::println);
-                    logger.info("📄 Failure summary appended to merged file: {}", mergedSummaryFile);
-                }
-            } catch (IOException e) {
-                logger.error("❌ Failed to write to merged failure summary", e);
-            }
-        }
-
-
-        // Copy the report to index.html if Jenkins expects it
+        // Copy the report to index.html for easy access in Jenkins
         try {
             Path source = Paths.get(reportPath + reportFileName);
             Path target = Paths.get(reportPath + "index.html");
             if (Files.exists(source)) {
                 Files.copy(source, target, StandardCopyOption.REPLACE_EXISTING);
-                logger.info("📄 Report copied to index.html for Jenkins display.");
+                logger.info("📄 Report copied to index.html for {} display.", browser.toUpperCase());
             }
         } catch (IOException e) {
-            logger.error("❌ Failed to copy report to index.html", e);
+            logger.error("❌ Failed to copy report to index.html for {}", browser.toUpperCase(), e);
+        }
+    }
+
+    /**
+     * This method runs once after the entire test suite has finished.
+     * It writes the consolidated failure summary to a file.
+     */
+    @AfterSuite(alwaysRun = true)
+    public void tearDownSuite() {
+        String suiteName = System.getProperty("test.suite", "default");
+        String mergedSummaryFile = "reports/" + suiteName + "-failure-summary.txt";
+
+        if (!failureSummaries.isEmpty()) {
+            try (PrintWriter out = new PrintWriter(new FileWriter(mergedSummaryFile, false))) { // Overwrite mode
+                failureSummaries.forEach(out::println);
+                logger.info("📄 Consolidated failure summary written to: {}", mergedSummaryFile);
+            } catch (IOException e) {
+                logger.error("❌ Failed to write consolidated failure summary.", e);
+            }
         }
     }
 }
