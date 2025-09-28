@@ -71,12 +71,6 @@ public class DriverManager {
             logger.info("Execution mode: {}", useGrid ? "REMOTE (Grid)" : "LOCAL");
             logger.info("Initializing {} driver for thread: {}", browserType, Thread.currentThread().threadId());
 
-            // ADDED: Set MDC so logs include suite and browser for this test thread
-            String mdcSuite   = System.getProperty("test.suite", "unknown");
-            String mdcBrowser = (browser != null && !browser.isBlank()) ? browser : "unknown";
-            ThreadContext.put("suite", mdcSuite.toUpperCase());
-            ThreadContext.put("browser", mdcBrowser.toUpperCase());
-
             // ✅ Fetch browser-specific options with headless flag
             MutableCapabilities options = BrowserOptionsFactory.getOptions(browserType, isHeadless);
 
@@ -141,8 +135,9 @@ public class DriverManager {
                 logger.warn("quitDriver called but thread-local WebDriver was null.");
             }
         } finally {
-            // ADDED: Clear only browser MDC to prevent leakage, preserve suite MDC
+            // ADDED: Clear only browser and custom thread MDC to prevent leakage, preserve suite MDC
             ThreadContext.remove("browser"); // Instead of clearMap()
+            ThreadContext.remove("thread");
             driver.remove();
             browserName.remove();
         }
