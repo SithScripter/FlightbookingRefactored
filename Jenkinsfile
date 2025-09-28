@@ -223,6 +223,9 @@ pipeline {
                     echo "📦 Generating dashboard for suite: ${env.SUITE_TO_RUN}"
                     generateDashboard(env.SUITE_TO_RUN, "${env.BUILD_NUMBER}")
                     archiveAndPublishReports()
+                    
+                    // Archive screenshots separately since shared library doesn't include them
+                    archiveArtifacts artifacts: 'screenshots/**', allowEmptyArchive: true
                 }
             }
         }
