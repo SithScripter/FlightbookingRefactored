@@ -179,13 +179,7 @@ pipeline {
                         stopDockerGrid('docker-compose-grid.yml')
                     }
 
-                    echo "📦 Generating dashboard for suite: ${env.SUITE_TO_RUN}"
-                    generateDashboard(env.SUITE_TO_RUN, "${env.BUILD_NUMBER}")
-                    archiveAndPublishReports()
-
-					// ✅ This condition is now more flexible. As your project grows, you can add
-					 // other important branches like 'main' or 'release' to this list.
-
+                    // Qase integration (only for specific branches)
                     if (env.BRANCH_NAME in ['enhancements', 'main']) {
                         try {
                             def qaseConfig = readJSON file: 'cicd/qase_config.json'
@@ -216,5 +210,21 @@ pipeline {
             }
         }
 
-}
+    }
+
+    post {
+        // 'always' ensures these steps run regardless of the build's success or failure.
+        always {
+            script {
+                // Use the 'inside' step to run all cleanup, reporting, and notifications inside our container.
+                // This is needed because we're using 'agent none' at the top level.
+                docker.image('flight-booking-agent:latest').inside('-u root -v /var/run/docker.sock:/var/run/docker.sock --entrypoint=""') {
+
+                    echo "📦 Generating dashboard for suite: ${env.SUITE_TO_RUN}"
+                    generateDashboard(env.SUITE_TO_RUN, "${env.BUILD_NUMBER}")
+                    archiveAndPublishReports()
+                }
+            }
+        }
+    }
 }
