@@ -245,18 +245,32 @@ pipeline {
 // Helper function to check for test failures
 def checkTestFailures() {
     try {
+        echo "🔍 Debug: Starting test failure check..."
+        
         // Parse test results from Surefire reports
         def testngResults = sh(script: 'find target/surefire-reports -name "*.xml" -exec grep -l "failures=" {} \\; | head -1 || echo ""', returnStdout: true).trim()
+        echo "🔍 Debug: Found XML file: '${testngResults}'"
         
         if (testngResults) {
             // Extract failure count from TestNG XML
             def failuresText = sh(script: "grep -o 'failures=\"[0-9]*\"' ${testngResults} | grep -o '[0-9]*' | head -1 || echo '0'", returnStdout: true).trim()
+            echo "🔍 Debug: Extracted failures from XML: '${failuresText}'"
             return failuresText.isEmpty() ? 0 : failuresText.toInteger()
         } else {
-            // Fallback: parse from console output (less reliable)
+            echo "🔍 Debug: No XML file found, using console output fallback"
+            // Fallback: parse from console output
             def consoleOutput = currentBuild.rawBuild.getLog(100).join('\n')
+            echo "🔍 Debug: Console output sample: '${consoleOutput.take(200)}...'"
             def failureMatch = (consoleOutput =~ /Tests run: \d+, Failures: (\d+)/)
-            return failureMatch ? failureMatch[0][1].toInteger() : 0
+            echo "🔍 Debug: Regex matches found: ${failureMatch.size()}"
+            if (failureMatch) {
+                def result = failureMatch[0][1].toInteger()
+                echo "🔍 Debug: Returning failures from console: ${result}"
+                return result
+            } else {
+                echo "🔍 Debug: No regex matches found"
+                return 0
+            }
         }
     } catch (Exception e) {
         echo "⚠️ Warning: Could not parse test results: ${e.getMessage()}"
