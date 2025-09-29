@@ -157,7 +157,8 @@ public class BaseTest {
                 failureSummaries.add(failureMsg);
 
                 String screenshotPath = ScreenshotUtils.captureScreenshot(driver, result.getMethod().getMethodName());
-                test.addScreenCaptureFromPath("../screenshots/" + new File(screenshotPath).getName());
+                // Use path relative to workspace root for both Jenkins HTML Publisher and artifacts
+                test.addScreenCaptureFromPath("reports/screenshots/" + new File(screenshotPath).getName());
                 test.fail(result.getThrowable());
                 logger.error("❌ Test failed: {} | Screenshot: {}", result.getMethod().getMethodName(), screenshotPath);
             } else {
