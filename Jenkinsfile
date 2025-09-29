@@ -248,14 +248,15 @@ def checkTestFailures() {
     
     try {
         // More precise approach: check for actual failure/error elements in XML
-        def failureElements = sh(script: 'find target/surefire-reports -name "*.xml" -exec grep -c "<failure>\|<error>" {} \\; 2>/dev/null | awk "{sum += \$1} END {print sum+0}"', returnStdout: true).trim()
-        echo "🔍 Debug: Found failure/error XML elements: ${failureElements}"
+        def failureElements = sh(script: 'find target/surefire-reports -name "*.xml" -exec grep -c "<failure>" {} \\; 2>/dev/null | awk "{sum += \$1} END {print sum+0}"', returnStdout: true).trim()
+        def errorElements = sh(script: 'find target/surefire-reports -name "*.xml" -exec grep -c "<error>" {} \\; 2>/dev/null | awk "{sum += \$1} END {print sum+0}"', returnStdout: true).trim()
+        echo "🔍 Debug: Found <failure> elements: ${failureElements}, <error> elements: ${errorElements}"
         
         // Check for failed test method results (status="FAIL")
-        def failedMethods = sh(script: 'find target/surefire-reports -name "*.xml" -exec grep -c "status=\"FAIL\"" {} \\; 2>/dev/null | awk "{sum += \$1} END {print sum+0}"', returnStdout: true).trim()
+        def failedMethods = sh(script: 'find target/surefire-reports -name "*.xml" -exec grep -c "status=\\"FAIL\\"" {} \\; 2>/dev/null | awk "{sum += \$1} END {print sum+0}"', returnStdout: true).trim()
         echo "🔍 Debug: Found failed test methods: ${failedMethods}"
         
-        def totalFailures = failureElements.toInteger() + failedMethods.toInteger()
+        def totalFailures = failureElements.toInteger() + errorElements.toInteger() + failedMethods.toInteger()
         echo "🔍 Debug: Total failures detected: ${totalFailures}"
         
         return totalFailures > 0 ? 1 : 0
