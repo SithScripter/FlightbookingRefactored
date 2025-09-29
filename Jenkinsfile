@@ -247,23 +247,18 @@ def checkTestFailures() {
     echo "🔍 Debug: Function called - starting test failure check..."
     
     try {
-        // Simple approach: check if there are any testng-failed.xml files
-        def failedFiles = sh(script: 'find target/surefire-reports -name "*failed*.xml" 2>/dev/null | wc -l', returnStdout: true).trim()
-        echo "🔍 Debug: Found failed XML files: ${failedFiles}"
+        // More precise approach: check for actual failure/error elements in XML
+        def failureElements = sh(script: 'find target/surefire-reports -name "*.xml" -exec grep -c "<failure>\|<error>" {} \\; 2>/dev/null | awk "{sum += \$1} END {print sum+0}"', returnStdout: true).trim()
+        echo "🔍 Debug: Found failure/error XML elements: ${failureElements}"
         
-        if (failedFiles.toInteger() > 0) {
-            echo "🔍 Debug: Found failed test files, returning 1+ failures"
-            return 1 // At least 1 failure
-        }
+        // Check for failed test method results (status="FAIL")
+        def failedMethods = sh(script: 'find target/surefire-reports -name "*.xml" -exec grep -c "status=\"FAIL\"" {} \\; 2>/dev/null | awk "{sum += \$1} END {print sum+0}"', returnStdout: true).trim()
+        echo "🔍 Debug: Found failed test methods: ${failedMethods}"
         
-        // Fallback: check for failure patterns in any XML files
-        def failurePattern = sh(script: 'find target/surefire-reports -name "*.xml" -exec grep -l "failure" {} \\; 2>/dev/null | wc -l', returnStdout: true).trim()
-        echo "🔍 Debug: Found failure patterns in XML: ${failurePattern}"
+        def totalFailures = failureElements.toInteger() + failedMethods.toInteger()
+        echo "🔍 Debug: Total failures detected: ${totalFailures}"
         
-        def result = failurePattern.toInteger() > 0 ? 1 : 0
-        echo "🔍 Debug: Returning result: ${result}"
-        
-        return result
+        return totalFailures > 0 ? 1 : 0
         
     } catch (Exception e) {
         echo "⚠️ Warning: Could not parse test results: ${e.getMessage()}"
