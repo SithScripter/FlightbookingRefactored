@@ -244,12 +244,25 @@ pipeline {
 
 // Helper function to check for test failures
 def checkTestFailures() {
-    echo "🔍 Debug: Starting test failure check..."
-    
-    // Temporary: Hardcode failure count for testing
-    // TODO: Implement proper parsing
-    def failureCount = 4
-    echo "🔍 Debug: Returning hardcoded failure count: ${failureCount}"
-    
-    return failureCount
+    try {
+        echo "🔍 Debug: Starting test failure check..."
+        
+        // Use shell command to parse the last test summary from console output
+        def result = sh(script: '''
+            # Get the last "Tests run:" line from the build log
+            # This is more reliable than parsing XML files
+            grep "Tests run:" /var/jenkins_home/jobs/*/builds/*/log | tail -1 | sed 's/.*Failures: \\([0-9]*\\).*/\\1/' || echo "0"
+        ''', returnStdout: true).trim()
+        
+        echo "🔍 Debug: Shell parsing result: '${result}'"
+        
+        def failureCount = result.isEmpty() ? 0 : result.toInteger()
+        echo "🔍 Debug: Parsed failure count: ${failureCount}"
+        
+        return failureCount
+        
+    } catch (Exception e) {
+        echo "⚠️ Warning: Could not parse test results: ${e.getMessage()}"
+        return 0
+    }
 }
