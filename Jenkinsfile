@@ -247,19 +247,42 @@ def checkTestFailures() {
     echo "🔍 Debug: Function called - starting test failure check..."
     
     try {
-        // More precise approach: check for actual failure/error elements in XML
-        def failureElements = sh(script: 'find target/surefire-reports -name "*.xml" -exec grep -c "<failure>" {} \\; 2>/dev/null | awk "{sum += \$1} END {print sum+0}"', returnStdout: true).trim()
-        def errorElements = sh(script: 'find target/surefire-reports -name "*.xml" -exec grep -c "<error>" {} \\; 2>/dev/null | awk "{sum += \$1} END {print sum+0}"', returnStdout: true).trim()
-        echo "🔍 Debug: Found <failure> elements: ${failureElements}, <error> elements: ${errorElements}"
+        // Simple approach: count failure and error elements
+        def failureCount = 0
         
-        // Check for failed test method results (status="FAIL")
-        def failedMethods = sh(script: 'find target/surefire-reports -name "*.xml" -exec grep -c "status=\\"FAIL\\"" {} \\; 2>/dev/null | awk "{sum += \$1} END {print sum+0}"', returnStdout: true).trim()
-        echo "🔍 Debug: Found failed test methods: ${failedMethods}"
+        // Count <failure> elements
+        try {
+            def failureCmd = sh(script: 'find target/surefire-reports -name "*.xml" -exec grep -c "<failure>" {} \\; 2>/dev/null || true', returnStdout: true).trim()
+            if (failureCmd) {
+                failureCount += failureCmd.split('\n').collect { it.toInteger() }.sum()
+            }
+        } catch (Exception e) {
+            echo "⚠️ Debug: Could not count failure elements: ${e.getMessage()}"
+        }
         
-        def totalFailures = failureElements.toInteger() + errorElements.toInteger() + failedMethods.toInteger()
-        echo "🔍 Debug: Total failures detected: ${totalFailures}"
+        // Count <error> elements  
+        try {
+            def errorCmd = sh(script: 'find target/surefire-reports -name "*.xml" -exec grep -c "<error>" {} \\; 2>/dev/null || true', returnStdout: true).trim()
+            if (errorCmd) {
+                failureCount += errorCmd.split('\n').collect { it.toInteger() }.sum()
+            }
+        } catch (Exception e) {
+            echo "⚠️ Debug: Could not count error elements: ${e.getMessage()}"
+        }
         
-        return totalFailures > 0 ? 1 : 0
+        // Count failed test methods
+        try {
+            def failCmd = sh(script: 'find target/surefire-reports -name "*.xml" -exec grep -c "status=\\"FAIL\\"" {} \\; 2>/dev/null || true', returnStdout: true).trim()
+            if (failCmd) {
+                failureCount += failCmd.split('\n').collect { it.toInteger() }.sum()
+            }
+        } catch (Exception e) {
+            echo "⚠️ Debug: Could not count failed methods: ${e.getMessage()}"
+        }
+        
+        echo "🔍 Debug: Total failures detected: ${failureCount}"
+        
+        return failureCount > 0 ? 1 : 0
         
     } catch (Exception e) {
         echo "⚠️ Warning: Could not parse test results: ${e.getMessage()}"
