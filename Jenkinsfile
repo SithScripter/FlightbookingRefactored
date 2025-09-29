@@ -226,8 +226,40 @@ pipeline {
                     
                     // Archive screenshots separately since shared library doesn't include them
                     archiveArtifacts artifacts: 'screenshots/**', allowEmptyArchive: true
+                    
+                    // 🆕 QUALITY GATE: Check test results and set build status
+                    def testFailures = checkTestFailures()
+                    
+                    if (testFailures > 0) {
+                        currentBuild.result = 'UNSTABLE'
+                        echo "🚨 Quality Gate: FAILED - ${testFailures} test failures detected. Build marked as UNSTABLE."
+                    } else {
+                        echo "✅ Quality Gate: PASSED - All tests successful."
+                    }
                 }
             }
         }
+    }
+}
+
+// Helper function to check for test failures
+def checkTestFailures() {
+    try {
+        // Parse test results from Surefire reports
+        def testngResults = sh(script: 'find target/surefire-reports -name "*.xml" -exec grep -l "failures=" {} \\; | head -1 || echo ""', returnStdout: true).trim()
+        
+        if (testngResults) {
+            // Extract failure count from TestNG XML
+            def failuresText = sh(script: "grep -o 'failures=\"[0-9]*\"' ${testngResults} | grep -o '[0-9]*' | head -1 || echo '0'", returnStdout: true).trim()
+            return failuresText.isEmpty() ? 0 : failuresText.toInteger()
+        } else {
+            // Fallback: parse from console output (less reliable)
+            def consoleOutput = currentBuild.rawBuild.getLog(100).join('\n')
+            def failureMatch = (consoleOutput =~ /Tests run: \d+, Failures: (\d+)/)
+            return failureMatch ? failureMatch[0][1].toInteger() : 0
+        }
+    } catch (Exception e) {
+        echo "⚠️ Warning: Could not parse test results: ${e.getMessage()}"
+        return 0
     }
 }
