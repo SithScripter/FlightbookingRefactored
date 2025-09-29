@@ -116,6 +116,13 @@
                     </suiteXmlFiles>
                     <useSystemClassLoader>false</useSystemClassLoader>
                     <workingDirectory>${basedir}</workingDirectory>
+                    <!-- Configure TestNG to generate JUnit XML reports -->
+                    <properties>
+                        <property>
+                            <name>listener</name>
+                            <value>org.testng.reporters.JUnitXMLReporter</value>
+                        </property>
+                    </properties>
                 </configuration>
             </plugin>
 

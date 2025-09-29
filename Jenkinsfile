@@ -230,7 +230,7 @@ pipeline {
             }
             
             // Publish test results to make Jenkins show UNSTABLE when tests fail
-            testng reportFilenamePattern: '**/target/surefire-reports/testng-results.xml'
+            junit testResults: '**/target/surefire-reports/junitreports/*.xml', allowEmptyResults: true
         }
     }
 }
