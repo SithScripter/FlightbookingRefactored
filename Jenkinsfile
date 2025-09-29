@@ -244,30 +244,12 @@ pipeline {
 
 // Helper function to check for test failures
 def checkTestFailures() {
-    try {
-        echo "🔍 Debug: Starting test failure check..."
-        
-        // Use console output parsing (more reliable)
-        def consoleOutput = currentBuild.rawBuild.getLog(200).join('\n')
-        echo "🔍 Debug: Console output sample: '${consoleOutput.take(300)}...'"
-        
-        // Look for the summary line with total failures
-        def failureMatch = (consoleOutput =~ /Tests run: \d+, Failures: (\d+)/)
-        echo "🔍 Debug: Regex matches found: ${failureMatch.size()}"
-        
-        if (failureMatch) {
-            // Get the last match (final summary)
-            def allMatches = (consoleOutput =~ /Tests run: \d+, Failures: (\d+)/)
-            def lastMatch = allMatches[allMatches.size() - 1]
-            def result = lastMatch[1].toInteger()
-            echo "🔍 Debug: Returning failures from console: ${result}"
-            return result
-        } else {
-            echo "🔍 Debug: No regex matches found in console output"
-            return 0
-        }
-    } catch (Exception e) {
-        echo "⚠️ Warning: Could not parse test results: ${e.getMessage()}"
-        return 0
-    }
+    echo "🔍 Debug: Starting test failure check..."
+    
+    // Temporary: Hardcode failure count for testing
+    // TODO: Implement proper parsing
+    def failureCount = 4
+    echo "🔍 Debug: Returning hardcoded failure count: ${failureCount}"
+    
+    return failureCount
 }
