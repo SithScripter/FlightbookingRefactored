@@ -244,22 +244,26 @@ pipeline {
 
 // Helper function to check for test failures
 def checkTestFailures() {
+    echo "🔍 Debug: Function called - starting test failure check..."
+    
     try {
-        echo "🔍 Debug: Starting test failure check..."
+        // Simple approach: check if there are any testng-failed.xml files
+        def failedFiles = sh(script: 'find target/surefire-reports -name "*failed*.xml" 2>/dev/null | wc -l', returnStdout: true).trim()
+        echo "🔍 Debug: Found failed XML files: ${failedFiles}"
         
-        // Use shell command to parse the last test summary from console output
-        def result = sh(script: '''
-            # Get the last "Tests run:" line from the build log
-            # This is more reliable than parsing XML files
-            grep "Tests run:" /var/jenkins_home/jobs/*/builds/*/log | tail -1 | sed 's/.*Failures: \\([0-9]*\\).*/\\1/' || echo "0"
-        ''', returnStdout: true).trim()
+        if (failedFiles.toInteger() > 0) {
+            echo "🔍 Debug: Found failed test files, returning 1+ failures"
+            return 1 // At least 1 failure
+        }
         
-        echo "🔍 Debug: Shell parsing result: '${result}'"
+        // Fallback: check for failure patterns in any XML files
+        def failurePattern = sh(script: 'find target/surefire-reports -name "*.xml" -exec grep -l "failure" {} \\; 2>/dev/null | wc -l', returnStdout: true).trim()
+        echo "🔍 Debug: Found failure patterns in XML: ${failurePattern}"
         
-        def failureCount = result.isEmpty() ? 0 : result.toInteger()
-        echo "🔍 Debug: Parsed failure count: ${failureCount}"
+        def result = failurePattern.toInteger() > 0 ? 1 : 0
+        echo "🔍 Debug: Returning result: ${result}"
         
-        return failureCount
+        return result
         
     } catch (Exception e) {
         echo "⚠️ Warning: Could not parse test results: ${e.getMessage()}"
