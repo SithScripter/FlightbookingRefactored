@@ -228,11 +228,6 @@ pipeline {
                     archiveArtifacts artifacts: 'screenshots/**', allowEmptyArchive: true
                 }
             }
-            
-            node {
-                // Publish test results to make Jenkins show UNSTABLE when tests fail
-                junit testResults: '**/target/surefire-reports/junitreports/*.xml', allowEmptyResults: true
-            }
         }
     }
 }
