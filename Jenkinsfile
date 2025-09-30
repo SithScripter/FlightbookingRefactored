@@ -54,15 +54,7 @@ pipeline {
                 }
             }
             steps {
-				echo "🚀 Starting Selenium Grid for suite: '${env.SUITE_TO_RUN}'"
-                cleanWs()
-                checkout scm
-                printBuildMetadata(env.SUITE_TO_RUN)
-
-                // Retry starting the grid to handle any temporary network flakiness.
-                retry(2) {
-                    startDockerGrid('docker-compose-grid.yml', 20)
-                }
+                initializeTestEnvironment(env.SUITE_TO_RUN)  // Clean orchestration!
             }
         }
 
