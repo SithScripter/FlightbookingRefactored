@@ -35,22 +35,11 @@ pipeline {
 
         // This initial stage runs on a lightweight agent to determine which suite to run.
         // This is a safe and robust pattern that avoids running complex logic in unsupported places.
-        stage('Determine Trigger Type & Suite') {
+        stage('Determine Suite') {
             agent any
             steps {
 				script {
-					def causes = currentBuild.getBuildCauses()
-					def descs  = causes*.shortDescription.join(', ')
-					echo "🔍 Build was triggered by: ${descs}"
-				  
-					def isTimerTrigger  = descs.toLowerCase().contains('timer') || descs.toLowerCase().contains('cron')
-					def isManualTrigger = descs.toLowerCase().contains('started by user')
-				  
-					def suiteToRun = isTimerTrigger ? 'regression' : (params.SUITE_NAME ?: 'smoke')
-					env.SUITE_TO_RUN = suiteToRun
-				  
-					echo "✅ Pipeline will run the '${env.SUITE_TO_RUN}' suite."
-					echo "DEBUG: params.SUITE_NAME='${params.SUITE_NAME}', env.SUITE_TO_RUN='${env.SUITE_TO_RUN}'"
+				    env.SUITE_TO_RUN = determineTestSuite()
 				  }
             }
         }
