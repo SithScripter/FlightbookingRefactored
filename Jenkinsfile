@@ -245,26 +245,47 @@ pipeline {
 // Helper function to check for test failures
 def checkTestFailures() {
     echo "🔍 Debug: Starting test failure check..."
-    
+
     try {
-        // Simple approach: check if reports exist and contain failures
-        def reportsExist = sh(script: 'test -d target/surefire-reports && echo "exists" || echo "missing"', returnStdout: true).trim()
-        
-        if (reportsExist == "missing") {
-            echo "🔍 Debug: No test reports directory found"
-            return 0
+        // Individual try-catch for each command
+        def failureCount = 0
+
+        // Count <failure> elements
+        try {
+            def failureCmd = sh(script: 'find target/surefire-reports -name "*.xml" -exec grep -c "<failure>" {} \\; 2>/dev/null || true', returnStdout: true).trim()
+            if (failureCmd) {
+                failureCount += failureCmd.split('\n').collect { it.toInteger() }.sum()
+            }
+        } catch (Exception e) {
+            echo "⚠️ Debug: Could not count failure elements: ${e.getMessage()}"
         }
-        
-        // Check for any failure indicators in reports
-        def hasFailures = sh(script: 'find target/surefire-reports -name "*.txt" -exec grep -l "FAILURES" {} \\; | wc -l', returnStdout: true).trim()
-        
-        def result = hasFailures.toInteger() > 0 ? 1 : 0
-        echo "🔍 Debug: Test failure check result: ${result}"
-        
-        return result
-        
+
+        // Count <error> elements
+        try {
+            def errorCmd = sh(script: 'find target/surefire-reports -name "*.xml" -exec grep -c "<error>" {} \\; 2>/dev/null || true', returnStdout: true).trim()
+            if (errorCmd) {
+                failureCount += errorCmd.split('\n').collect { it.toInteger() }.sum()
+            }
+        } catch (Exception e) {
+            echo "⚠️ Debug: Could not count error elements: ${e.getMessage()}"
+        }
+
+        // Count failed test methods
+        try {
+            def failCmd = sh(script: 'find target/surefire-reports -name "*.xml" -exec grep -c "status=\\"FAIL\\"" {} \\; 2>/dev/null || true', returnStdout: true).trim()
+            if (failCmd) {
+                failureCount += failCmd.split('\n').collect { it.toInteger() }.sum()
+            }
+        } catch (Exception e) {
+            echo "⚠️ Debug: Could not count failed methods: ${e.getMessage()}"
+        }
+
+        echo "🔍 Debug: Total failures detected: ${failureCount}"
+
+        return failureCount > 0 ? 1 : 0
+
     } catch (Exception e) {
-        echo "⚠️ Warning: Could not check test results: ${e.getMessage()}"
+        echo "⚠️ Warning: Could not parse test results: ${e.getMessage()}"
         return 0
     }
 }
