@@ -247,16 +247,16 @@ def checkTestFailures() {
     echo "🔍 Debug: Starting test failure check..."
     
     try {
-        // Simple check: look for surefire reports directory
-        def reportsExist = sh(script: 'ls -la target/surefire-reports/ 2>/dev/null || echo "no-reports"', returnStdout: true).trim()
+        // Simple approach: check if reports exist and contain failures
+        def reportsExist = sh(script: 'test -d target/surefire-reports && echo "exists" || echo "missing"', returnStdout: true).trim()
         
-        if (reportsExist.contains('no-reports')) {
-            echo "🔍 Debug: No test reports found"
+        if (reportsExist == "missing") {
+            echo "🔍 Debug: No test reports directory found"
             return 0
         }
         
-        // Basic failure check
-        def hasFailures = sh(script: 'find target/surefire-reports -name "*.txt" -exec grep -l "Tests run:" {} \\; | head -1 | grep -c "Failures: [1-9]" || echo "0"', returnStdout: true).trim()
+        // Check for any failure indicators in reports
+        def hasFailures = sh(script: 'find target/surefire-reports -name "*.txt" -exec grep -l "FAILURES" {} \\; | wc -l', returnStdout: true).trim()
         
         def result = hasFailures.toInteger() > 0 ? 1 : 0
         echo "🔍 Debug: Test failure check result: ${result}"
