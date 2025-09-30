@@ -60,8 +60,7 @@ public class TestListener implements ITestListener, IAnnotationTransformer {
 				String screenshotPath =
 						ScreenshotUtils.captureScreenshot(driver, result.getMethod().getMethodName());
 				if (test != null) {
-					// Use workspace-relative path for both Jenkins HTML Publisher and artifacts
-					test.addScreenCaptureFromPath("reports/screenshots/" + new java.io.File(screenshotPath).getName());
+					test.addScreenCaptureFromPath("../screenshots/" + new java.io.File(screenshotPath).getName());
 				}
 			} else if (test != null) {
 				test.log(Status.WARNING, "Driver was null; skipping screenshot.");
