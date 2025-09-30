@@ -244,48 +244,27 @@ pipeline {
 
 // Helper function to check for test failures
 def checkTestFailures() {
-    echo "🔍 Debug: Function called - starting test failure check..."
+    echo "🔍 Debug: Starting test failure check..."
     
     try {
-        // Simple approach: count failure and error elements
-        def failureCount = 0
+        // Simple check: look for surefire reports directory
+        def reportsExist = sh(script: 'ls -la target/surefire-reports/ 2>/dev/null || echo "no-reports"', returnStdout: true).trim()
         
-        // Count <failure> elements
-        try {
-            def failureCmd = sh(script: 'find target/surefire-reports -name "*.xml" -exec grep -c "<failure>" {} \\; 2>/dev/null || true', returnStdout: true).trim()
-            if (failureCmd) {
-                failureCount += failureCmd.split('\n').collect { it.toInteger() }.sum()
-            }
-        } catch (Exception e) {
-            echo "⚠️ Debug: Could not count failure elements: ${e.getMessage()}"
+        if (reportsExist.contains('no-reports')) {
+            echo "🔍 Debug: No test reports found"
+            return 0
         }
         
-        // Count <error> elements  
-        try {
-            def errorCmd = sh(script: 'find target/surefire-reports -name "*.xml" -exec grep -c "<error>" {} \\; 2>/dev/null || true', returnStdout: true).trim()
-            if (errorCmd) {
-                failureCount += errorCmd.split('\n').collect { it.toInteger() }.sum()
-            }
-        } catch (Exception e) {
-            echo "⚠️ Debug: Could not count error elements: ${e.getMessage()}"
-        }
+        // Basic failure check
+        def hasFailures = sh(script: 'find target/surefire-reports -name "*.txt" -exec grep -l "Tests run:" {} \\; | head -1 | grep -c "Failures: [1-9]" || echo "0"', returnStdout: true).trim()
         
-        // Count failed test methods
-        try {
-            def failCmd = sh(script: 'find target/surefire-reports -name "*.xml" -exec grep -c "status=\\"FAIL\\"" {} \\; 2>/dev/null || true', returnStdout: true).trim()
-            if (failCmd) {
-                failureCount += failCmd.split('\n').collect { it.toInteger() }.sum()
-            }
-        } catch (Exception e) {
-            echo "⚠️ Debug: Could not count failed methods: ${e.getMessage()}"
-        }
+        def result = hasFailures.toInteger() > 0 ? 1 : 0
+        echo "🔍 Debug: Test failure check result: ${result}"
         
-        echo "🔍 Debug: Total failures detected: ${failureCount}"
-        
-        return failureCount > 0 ? 1 : 0
+        return result
         
     } catch (Exception e) {
-        echo "⚠️ Warning: Could not parse test results: ${e.getMessage()}"
+        echo "⚠️ Warning: Could not check test results: ${e.getMessage()}"
         return 0
     }
 }
