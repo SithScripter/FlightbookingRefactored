@@ -116,12 +116,14 @@ pipeline {
                 expression { return env.BRANCH_NAME in branchConfig.activeBranches }
                 beforeAgent true  // ✅ Resource optimization
             }
+            // force agent to run on the same machine as the build
             agent {
                 docker {
                     image 'flight-booking-agent:latest'
                     args '-u root -v /var/run/docker.sock:/var/run/docker.sock --entrypoint=""'
                 }
             }
+
             steps {
                 script {
                     echo "DEBUG: Suite name at start of post-build is '${env.SUITE_TO_RUN}'"
