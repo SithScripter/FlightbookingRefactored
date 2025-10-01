@@ -50,7 +50,6 @@ pipeline {
         stage('Initialize & Start Grid') {
             when {
                 expression { return env.BRANCH_NAME in branchConfig.activeBranches }
-                beforeAgent true  // ✅ Resource optimization
             }
             agent {
                 docker {
@@ -70,7 +69,6 @@ pipeline {
                     expression { return env.BRANCH_NAME in branchConfig.productionCandidateBranches }
                     expression { return env.SUITE_TO_RUN == 'regression' }
                     expression { return params.MANUAL_APPROVAL == true }
-                    beforeAgent true  // ✅ Resource optimization
                 }
             }
             agent any 
@@ -81,11 +79,9 @@ pipeline {
             }
         }
 
-        // This stage executes the tests in parallel across Chrome and Firefox.
         stage('Build & Run Parallel Tests') {
             when {
                 expression { return env.BRANCH_NAME in branchConfig.activeBranches }
-                beforeAgent true  // ✅ Resource optimization
             }
             agent {
                 docker {
@@ -114,9 +110,8 @@ pipeline {
         stage('Post-Build Actions') {
             when {
                 expression { return env.BRANCH_NAME in branchConfig.activeBranches }
-                beforeAgent true  // ✅ Resource optimization
             }
-
+            //Force agent to run on the same machine as the build
             agent {
                 docker {
                     image 'flight-booking-agent:latest'
