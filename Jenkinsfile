@@ -1,5 +1,7 @@
 @Library('my-automation-library') _
 
+def branchConfig = getBranchConfig()  // ✅ Load centralized config
+
 pipeline {
     // ✅ We define no top-level agent. This enables a flexible multi-agent
     // strategy where each stage can use its own specialized environment.
@@ -46,7 +48,10 @@ pipeline {
 
         // This stage prepares the environment by starting the Selenium Grid.
         stage('Initialize & Start Grid') {
-            when { branch 'enhancements' }
+            when {
+                expression { return env.BRANCH_NAME in branchConfig.activeBranches }
+                beforeAgent true  // ✅ Resource optimization
+            }
             agent {
                 docker {
                     image 'flight-booking-agent:latest'
@@ -62,9 +67,10 @@ pipeline {
         stage('Approval Gate (Regression Only)') {
             when {
                 allOf {
-                    branch 'enhancements'
+                    expression { return env.BRANCH_NAME in branchConfig.productionCandidateBranches }
                     expression { return env.SUITE_TO_RUN == 'regression' }
                     expression { return params.MANUAL_APPROVAL == true }
+                    beforeAgent true  // ✅ Resource optimization
                 }
             }
             agent any 
@@ -77,7 +83,10 @@ pipeline {
 
         // This stage executes the tests in parallel across Chrome and Firefox.
         stage('Build & Run Parallel Tests') {
-            when { branch 'enhancements' }
+            when {
+                expression { return env.BRANCH_NAME in branchConfig.activeBranches }
+                beforeAgent true  // ✅ Resource optimization
+            }
             agent {
                 docker {
                     image 'flight-booking-agent:latest'
@@ -103,7 +112,10 @@ pipeline {
         }
 
         stage('Post-Build Actions') {
-            when { branch 'enhancements' }
+            when {
+                expression { return env.BRANCH_NAME in branchConfig.activeBranches }
+                beforeAgent true  // ✅ Resource optimization
+            }
             agent {
                 docker {
                     image 'flight-booking-agent:latest'
@@ -114,13 +126,15 @@ pipeline {
                 script {
                     echo "DEBUG: Suite name at start of post-build is '${env.SUITE_TO_RUN}'"
 
-                    if (env.BRANCH_NAME == 'enhancements') {
+                    // ✅ Use centralized config for grid shutdown
+                    if (env.BRANCH_NAME in branchConfig.activeBranches) {
                         echo '🧹 Shutting down Selenium Grid...'
                         stopDockerGrid('docker-compose-grid.yml')
                     }
 
-                    // Qase integration (only for specific branches)
-                    if (env.BRANCH_NAME in ['enhancements', 'main']) {
+                    // ✅ Use centralized config for Qase integration
+                    if (env.BRANCH_NAME in branchConfig.productionCandidateBranches) {
+                        echo "🚀 Running notifications for production-candidate branch: ${env.BRANCH_NAME}"
                         try {
                             def qaseConfig = readJSON file: 'cicd/qase_config.json'
                             def suiteSettings = qaseConfig[env.SUITE_TO_RUN]
