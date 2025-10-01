@@ -1,4 +1,4 @@
-@Library('my-automation-library@latest') _
+@Library('my-automation-library') _
 
 def branchConfig = getBranchConfig()  // ✅ Load centralized config
 
