@@ -1,4 +1,4 @@
-@Library('my-automation-library') _
+@Library('my-automation-library@latest') _
 
 def branchConfig = getBranchConfig()  // ✅ Load centralized config
 
@@ -116,7 +116,7 @@ pipeline {
                 expression { return env.BRANCH_NAME in branchConfig.activeBranches }
                 beforeAgent true  // ✅ Resource optimization
             }
-            
+
             agent {
                 docker {
                     image 'flight-booking-agent:latest'
