@@ -159,7 +159,8 @@ pipeline {
                     }
                 } // ✅ ADDED: This brace closes the script block
             }
-        } // This brace closes the 'stages' block
+        } // This brace closes the 'Post-Build Actions' stage
+    } // ✅ ADDED: This brace closes the 'stages' block
 
     post {
         // 'always' ensures these steps run regardless of the build's success or failure.
@@ -205,5 +206,4 @@ pipeline {
             }
         }
     }
-}
 }
