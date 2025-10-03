@@ -157,7 +157,9 @@ pipeline {
                     } else {
                         echo "ℹ️ Skipping post-build notifications for branch: ${env.BRANCH_NAME}"
                     }
-    }
+                } // ✅ ADDED: This brace closes the script block
+            }
+        } // This brace closes the 'stages' block
 
     post {
         // 'always' ensures these steps run regardless of the build's success or failure.
@@ -167,7 +169,7 @@ pipeline {
                 // This is needed because we're using 'agent none' at the top level.
                 docker.image('flight-booking-agent:latest').inside('-u root -v /var/run/docker.sock:/var/run/docker.sock --entrypoint=""') {
 
-                    echo "📦 Generating dashboard for suite: ${env.SUITE_TO_RUN}"
+                    echo "Generating dashboard for suite: ${env.SUITE_TO_RUN}"
                     generateDashboard(env.SUITE_TO_RUN, "${env.BUILD_NUMBER}")
                     archiveAndPublishReports()
 
@@ -175,31 +177,33 @@ pipeline {
                     archiveArtifacts artifacts: 'screenshots/**', allowEmptyArchive: true
 
                     // ======================================================
-                    // 🚀 FIXED QUALITY GATE LOGIC - BUILD STATUS FIRST
+                    // FIXED QUALITY GATE LOGIC - BUILD STATUS FIRST
                     // ======================================================
-                    echo "📊 Evaluating Quality Gate..."
+                    echo "Evaluating Quality Gate..."
 
                     // First, check the overall build status. If it's not 'SUCCESS' or 'UNSTABLE'
                     // it means a fatal error (like compilation) occurred.
                     if (currentBuild.result == null || currentBuild.result == 'SUCCESS') {
                         // If the build itself was successful, now we can safely check for test failures.
-                        echo "✅ Build step completed successfully. Now checking test results..."
+                        echo "Build step completed successfully. Now checking test results..."
                         def testFailures = checkTestFailures()
 
                         if (testFailures > 0) {
                             // Mark the build as UNSTABLE if there are test failures.
                             currentBuild.result = 'UNSTABLE'
-                            echo "🚨 Quality Gate: FAILED - Build succeeded, but ${testFailures} test failures were found."
+                            echo "Quality Gate: FAILED - Build succeeded, but ${testFailures} test failures were found."
                         } else {
                             // This is the only true "PASS" condition.
-                            echo "✅ Quality Gate: PASSED - Build succeeded and all tests passed."
+                            echo "Quality Gate: PASSED - Build succeeded and all tests passed."
                         }
                     } else {
                         // If the build was already marked as FAILURE or ABORTED, the gate automatically fails.
                         // No need to check for test results as they likely didn't run.
-                        echo "🚨 Quality Gate: FAILED - The build did not complete successfully (Status: ${currentBuild.result})."
+                        echo "Quality Gate: FAILED - The build did not complete successfully (Status: ${currentBuild.result})."
                     }
                 }
             }
         }
     }
+}
+}
