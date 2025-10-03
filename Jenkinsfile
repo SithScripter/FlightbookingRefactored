@@ -157,10 +157,6 @@ pipeline {
                     } else {
                         echo "ℹ️ Skipping post-build notifications for branch: ${env.BRANCH_NAME}"
                     }
-                }
-            }
-        }
-
     }
 
     post {
@@ -174,21 +170,36 @@ pipeline {
                     echo "📦 Generating dashboard for suite: ${env.SUITE_TO_RUN}"
                     generateDashboard(env.SUITE_TO_RUN, "${env.BUILD_NUMBER}")
                     archiveAndPublishReports()
-                    
+
                     // Archive screenshots separately since shared library doesn't include them
                     archiveArtifacts artifacts: 'screenshots/**', allowEmptyArchive: true
-                    
-                    // 🆕 QUALITY GATE: Check test results and set build status
-                    def testFailures = checkTestFailures()
-                    
-                    if (testFailures > 0) {
-                        currentBuild.result = 'UNSTABLE'
-                        echo "🚨 Quality Gate: FAILED - ${testFailures} test failures detected. Build marked as UNSTABLE."
+
+                    // ======================================================
+                    // 🚀 FIXED QUALITY GATE LOGIC - BUILD STATUS FIRST
+                    // ======================================================
+                    echo "📊 Evaluating Quality Gate..."
+
+                    // First, check the overall build status. If it's not 'SUCCESS' or 'UNSTABLE'
+                    // it means a fatal error (like compilation) occurred.
+                    if (currentBuild.result == null || currentBuild.result == 'SUCCESS') {
+                        // If the build itself was successful, now we can safely check for test failures.
+                        echo "✅ Build step completed successfully. Now checking test results..."
+                        def testFailures = checkTestFailures()
+
+                        if (testFailures > 0) {
+                            // Mark the build as UNSTABLE if there are test failures.
+                            currentBuild.result = 'UNSTABLE'
+                            echo "🚨 Quality Gate: FAILED - Build succeeded, but ${testFailures} test failures were found."
+                        } else {
+                            // This is the only true "PASS" condition.
+                            echo "✅ Quality Gate: PASSED - Build succeeded and all tests passed."
+                        }
                     } else {
-                        echo "✅ Quality Gate: PASSED - All tests successful."
+                        // If the build was already marked as FAILURE or ABORTED, the gate automatically fails.
+                        // No need to check for test results as they likely didn't run.
+                        echo "🚨 Quality Gate: FAILED - The build did not complete successfully (Status: ${currentBuild.result})."
                     }
                 }
             }
         }
     }
-}
