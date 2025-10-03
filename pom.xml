@@ -116,11 +116,11 @@
                     </suiteXmlFiles>
                     <useSystemClassLoader>false</useSystemClassLoader>
                     <workingDirectory>${basedir}</workingDirectory>
-                    <!-- Configure TestNG to generate JUnit XML reports -->
+                    <!-- Configure TestNG to generate JUnit XML reports and use custom listeners -->
                     <properties>
                         <property>
                             <name>listener</name>
-                            <value>org.testng.reporters.JUnitXMLReporter</value>
+                            <value>org.testng.reporters.JUnitXMLReporter,com.demo.flightbooking.listeners.TestListener</value>
                         </property>
                     </properties>
                 </configuration>

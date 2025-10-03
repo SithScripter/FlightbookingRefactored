@@ -175,7 +175,7 @@ pipeline {
                     archiveAndPublishReports()
 
                     // Archive screenshots separately since shared library doesn't include them
-                    archiveArtifacts artifacts: 'screenshots/**', allowEmptyArchive: true
+                    archiveArtifacts artifacts: 'target/screenshots/**', allowEmptyArchive: true
 
                     // ======================================================
                     // FIXED QUALITY GATE LOGIC - BUILD STATUS FIRST

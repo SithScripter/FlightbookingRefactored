@@ -75,6 +75,17 @@ public class BaseTest {
     @Parameters("browser")
     @BeforeClass(alwaysRun = true)
     public void setUpClass(String browser) {
+        // Set MDC context immediately for thread-safe logging
+        String mdcSuite = System.getProperty("test.suite", "unknown");
+        String mdcBrowser = (browser != null && !browser.isBlank()) ? browser.toUpperCase() : "UNKNOWN";
+        String customThreadName = "TestNG-test-" + mdcSuite.toLowerCase() + "-" + browser.toLowerCase() + "-1";
+
+        // Set actual thread name so log4j %X{thread} picks it up correctly
+        Thread.currentThread().setName(customThreadName);
+
+        ThreadContext.put("suite", mdcSuite.toUpperCase());
+        ThreadContext.put("browser", mdcBrowser);
+
         // Set browser for current thread
         DriverManager.setBrowser(browser);
         logger.info("✅ Browser set to: {} for test class: {}", browser.toUpperCase(), this.getClass().getSimpleName());
@@ -109,29 +120,16 @@ public class BaseTest {
      * This method runs before each test method.
      * It initializes the WebDriver instance for the current thread and creates a new
      * test entry in the ExtentReport.
-     *
      * @param method The test method that is about to be run.
      */
     @Parameters("browser")
     @BeforeMethod(alwaysRun = true)
     public void setUp(String browser, Method method) {
-        // Set MDC context at the start of each test method to ensure correct logging
-        String mdcSuite = System.getProperty("test.suite", "unknown");
-        String mdcBrowser = (browser != null && !browser.isBlank()) ? browser.toUpperCase() : "UNKNOWN";
-        String customThreadName = "TestNG-test-" + mdcSuite.toLowerCase() + "-" + browser.toLowerCase() + "-1";
-        
-        // Set actual thread name so log4j %X{thread} picks it up correctly
-        Thread.currentThread().setName(customThreadName);
-        
-        ThreadContext.put("suite", mdcSuite.toUpperCase());
-        ThreadContext.put("browser", mdcBrowser);
-
         DriverManager.setBrowser(browser);
-        DriverManager.getDriver(); // Launch browser
+        WebDriver driver = DriverManager.getDriver(); // Launch browser
         logger.info("🚀 WebDriver initialized for test: {}", method.getName());
 
         String browserName = DriverManager.getBrowser().toUpperCase();
-
         // Create a test entry in report
         ExtentTest test = extentReports.get().createTest(method.getName() + " - " + browserName);
         ExtentManager.setTest(test);
@@ -157,7 +155,7 @@ public class BaseTest {
                 failureSummaries.add(failureMsg);
 
                 String screenshotPath = ScreenshotUtils.captureScreenshot(driver, result.getMethod().getMethodName());
-                test.addScreenCaptureFromPath("../screenshots/" + new File(screenshotPath).getName());
+                test.addScreenCaptureFromPath(screenshotPath);
                 test.fail(result.getThrowable());
                 logger.error("❌ Test failed: {} | Screenshot: {}", result.getMethod().getMethodName(), screenshotPath);
             } else {
