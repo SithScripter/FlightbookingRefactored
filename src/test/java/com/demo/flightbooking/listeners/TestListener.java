@@ -57,10 +57,10 @@ public class TestListener implements ITestListener, IAnnotationTransformer {
 				com.demo.flightbooking.listeners.RetryAnalyzer retryAnalyzer =
 					(com.demo.flightbooking.listeners.RetryAnalyzer) result.getMethod().getRetryAnalyzer(result);
 
-				// If the analyzer will retry, suppress this failure report
+				// If the analyzer will retry, suppress this failure report AND screenshot
 				if (retryAnalyzer.retry(result)) {
-					// Don't log to ExtentReports for intermediate failures
-					return; // Exit early - don't process this failure
+					// Don't log to ExtentReports for intermediate failures AND don't capture screenshot
+					return; // Exit early - don't process this failure at all
 				}
 			} catch (ClassCastException e) {
 				// If it's not our retry analyzer, continue with normal processing
@@ -72,6 +72,8 @@ public class TestListener implements ITestListener, IAnnotationTransformer {
 		if (test != null) {
 			test.log(Status.FAIL, "Test failed: " + result.getThrowable());
 		}
+
+		// Only capture screenshot for final failures
 		try {
 			WebDriver driver = DriverManager.getDriver(); // use thread-local driver
 			if (driver != null) {
@@ -88,8 +90,6 @@ public class TestListener implements ITestListener, IAnnotationTransformer {
 				test.log(Status.WARNING, "Screenshot capture failed: " + e.getMessage());
 			}
 		}
-//		}
-	}
 
 	@Override
 	public void onTestSkipped(ITestResult result) {

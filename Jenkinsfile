@@ -112,6 +112,9 @@ pipeline {
                         )
                     }
                 }
+                // ✅ Stash screenshots for cross-container transfer to post block
+                echo "Stashing screenshots for archiving..."
+                stash name: 'test-screenshots', includes: 'reports/screenshots/**', allowEmpty: true
             }
         }
 
@@ -187,6 +190,9 @@ pipeline {
                     generateDashboard(env.SUITE_TO_RUN, "${env.BUILD_NUMBER}")
                     archiveAndPublishReports()
 
+                    // ✅ Unstash screenshots from test stage for archiving
+                    echo "Unstashing screenshots for archiving..."
+                    unstash 'test-screenshots'
                     // Archive screenshots separately since shared library doesn't include them
                     archiveArtifacts artifacts: 'reports/screenshots/**', allowEmptyArchive: true
 
