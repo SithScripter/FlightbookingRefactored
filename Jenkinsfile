@@ -49,7 +49,11 @@ pipeline {
         // This stage prepares the environment by starting the Selenium Grid.
         stage('Initialize & Start Grid') {
             when {
-                expression { return env.BRANCH_NAME in branchConfig.activeBranches }
+                expression { 
+                    def branchName = env.BRANCH_NAME
+                    return branchName in branchConfig.activeBranches || 
+                           branchConfig.experimentalBranches.any { pattern -> branchName.matches(pattern.replace('*', '.*')) }
+                }
             }
             agent {
                 docker {
@@ -81,7 +85,11 @@ pipeline {
 
         stage('Build & Run Parallel Tests') {
             when {
-                expression { return env.BRANCH_NAME in branchConfig.activeBranches }
+                expression { 
+                    def branchName = env.BRANCH_NAME
+                    return branchName in branchConfig.activeBranches || 
+                           branchConfig.experimentalBranches.any { pattern -> branchName.matches(pattern.replace('*', '.*')) }
+                }
             }
             agent {
                 docker {
@@ -109,7 +117,11 @@ pipeline {
 
         stage('Post-Build Actions') {
             when {
-                expression { return env.BRANCH_NAME in branchConfig.activeBranches }
+                expression { 
+                    def branchName = env.BRANCH_NAME
+                    return branchName in branchConfig.activeBranches || 
+                           branchConfig.experimentalBranches.any { pattern -> branchName.matches(pattern.replace('*', '.*')) }
+                }
             }
             //Force agent to run on the same machine as the build
             agent {
@@ -124,7 +136,8 @@ pipeline {
                     echo "DEBUG: Suite name at start of post-build is '${env.SUITE_TO_RUN}'"
 
                     // ✅ Use centralized config for grid shutdown
-                    if (env.BRANCH_NAME in branchConfig.activeBranches) {
+                    if (env.BRANCH_NAME in branchConfig.activeBranches || 
+                        branchConfig.experimentalBranches.any { pattern -> env.BRANCH_NAME.matches(pattern.replace('*', '.*')) }) {
                         echo '🧹 Shutting down Selenium Grid...'
                         stopDockerGrid('docker-compose-grid.yml')
                     }
