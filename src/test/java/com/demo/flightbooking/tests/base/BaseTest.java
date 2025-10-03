@@ -45,17 +45,19 @@ public class BaseTest {
     protected static final List<String> failureSummaries =
             Collections.synchronizedList(new ArrayList<>());
 
-    /**
-     * This method runs once before the entire test suite.
-     * It sets up the ExtentReports instance and configures the report's appearance.
-     */
+//     * This method runs once before the entire test suite.
+//     * It sets up the ExtentReports instance and configures the report's appearance.
+//     */
     @BeforeSuite(alwaysRun = true)
     public void setUpSuite() {
+        // ✅ Use dynamic logger for consistency
+        Logger suiteLogger = LogManager.getLogger(this.getClass());
+        
         File logsDir = new File("logs");
         if (!logsDir.exists()) {
             logsDir.mkdirs();
         }
-        logger.info("✅ Logs directory ensured.");
+        suiteLogger.info("✅ Logs directory ensured.");
 
         // ✅ Read the suite name from the system property passed by Maven
         String suiteName = System.getProperty("test.suite", "default");
@@ -64,7 +66,7 @@ public class BaseTest {
         File oldSummary = new File("reports/" + suiteName + "-failure-summary.txt");
         if (oldSummary.exists()) {
             oldSummary.delete();
-            logger.info("🧹 Old failure summary deleted.");
+            suiteLogger.info("🧹 Old failure summary deleted.");
         }
     }
 
@@ -74,25 +76,15 @@ public class BaseTest {
      */
     @Parameters("browser")
     @BeforeClass(alwaysRun = true)
-    public void setUpClass(String browser) {
-        // Set MDC context immediately for thread-safe logging
-        String mdcSuite = System.getProperty("test.suite", "unknown");
-        String mdcBrowser = (browser != null && !browser.isBlank()) ? browser.toUpperCase() : "UNKNOWN";
-        String customThreadName = "TestNG-test-" + mdcSuite.toLowerCase() + "-" + browser.toLowerCase() + "-1";
-
-        // Set actual thread name so log4j %X{thread} picks it up correctly
-        Thread.currentThread().setName(customThreadName);
-
-        // Note: MDC context is now set per-method in @BeforeMethod for proper isolation
-        // ThreadContext.put("suite", mdcSuite.toUpperCase());
-        // ThreadContext.put("browser", mdcBrowser);
-
-        // Set browser for current thread
-        DriverManager.setBrowser(browser);
-        logger.info("✅ Browser set to: {} for test class: {}", browser.toUpperCase(), this.getClass().getSimpleName());
-
+    public void setUpClass() {
+        // ✅ Use dynamic logger for consistency
+        Logger classLogger = LogManager.getLogger(this.getClass());
+        
+        // Get browser from system property (set by Jenkins Maven command)
+        String browser = System.getProperty("browser", "chrome").toUpperCase();
+        
         // Determine suite and report directory (e.g., chrome or firefox)
-        String reportDir = System.getProperty("report.dir", browser); // fallback to browser
+        String reportDir = System.getProperty("report.dir", browser.toLowerCase()); // fallback to browser
         String suiteName = System.getProperty("test.suite", "default");
 
         String reportPath = "reports/" + reportDir + "/";
@@ -114,7 +106,7 @@ public class BaseTest {
         reports.setSystemInfo("Java Version", System.getProperty("java.version"));
         extentReports.set(reports);
 
-        logger.info("✅ Report will be generated at: {}/{}", reportPath, reportFileName);
+        classLogger.info("✅ Report will be generated at: {}/{}", reportPath, reportFileName);
     }
 
     /**
@@ -123,11 +115,15 @@ public class BaseTest {
      * test entry in the ExtentReport.
      * @param method The test method that is about to be run.
      */
+    @Parameters("browser")
     @BeforeMethod(alwaysRun = true)
-    public void setUp(String browser, Method method) {
+    public void setUp(Method method) {
         // ✅ ROBUST MDC: Set context for THIS test method's thread
         String mdcSuite = System.getProperty("test.suite", "unknown");
-        String mdcBrowser = (browser != null && !browser.isBlank()) ? browser.toUpperCase() : "UNKNOWN";
+        
+        // Get browser from system property (set by Jenkins Maven command)
+        String browser = System.getProperty("browser", "chrome").toUpperCase();
+        String mdcBrowser = (browser != null && !browser.isBlank()) ? browser : "UNKNOWN";
 
         // Set thread name for log4j %X{thread} pickup
         String customThreadName = "TestNG-test-" + mdcSuite.toLowerCase() + "-" + browser.toLowerCase() + "-1";
@@ -139,11 +135,11 @@ public class BaseTest {
         ThreadContext.put("testname", method.getName());
 
         // Set browser for current thread
-        DriverManager.setBrowser(browser);
+        DriverManager.setBrowser(browser.toLowerCase());
         
         // ✅ Use logger after MDC is set so it picks up the context
         Logger methodLogger = LogManager.getLogger(this.getClass());
-        methodLogger.info("✅ Browser set to: {} for test: {}", browser.toUpperCase(), method.getName());
+        methodLogger.info("✅ Browser set to: {} for test: {}", browser, method.getName());
 
         String browserName = DriverManager.getBrowser().toUpperCase();
         // Create a test entry in report
@@ -198,9 +194,12 @@ public class BaseTest {
      */
     @AfterClass(alwaysRun = true)
     public void tearDownClass() {
+        // ✅ Use dynamic logger to pick up MDC context
+        Logger classLogger = LogManager.getLogger(this.getClass());
+        
         if (extentReports.get() != null) {
             extentReports.get().flush();
-            logger.info("✅ ExtentReports flushed to disk.");
+            classLogger.info("✅ ExtentReports flushed to disk.");
         }
 
         // Optional logic to write summary and copy report
@@ -216,10 +215,10 @@ public class BaseTest {
                 file.getParentFile().mkdirs(); // Ensure reports/ exists
                 try (PrintWriter out = new PrintWriter(new FileWriter(file, true))) { // append mode
                     failureSummaries.forEach(out::println);
-                    logger.info("📄 Failure summary appended to merged file: {}", mergedSummaryFile);
+                    classLogger.info("📄 Failure summary appended to merged file: {}", mergedSummaryFile);
                 }
             } catch (IOException e) {
-                logger.error("❌ Failed to write to merged failure summary", e);
+                classLogger.error("❌ Failed to write to merged failure summary", e);
             }
         }
 
@@ -230,10 +229,10 @@ public class BaseTest {
             Path target = Paths.get(reportPath + "index.html");
             if (Files.exists(source)) {
                 Files.copy(source, target, StandardCopyOption.REPLACE_EXISTING);
-                logger.info("📄 Report copied to index.html for Jenkins display.");
+                classLogger.info("📄 Report copied to index.html for Jenkins display.");
             }
         } catch (IOException e) {
-            logger.error("❌ Failed to copy report to index.html", e);
+            classLogger.error("❌ Failed to copy report to index.html", e);
         }
     }
 }
