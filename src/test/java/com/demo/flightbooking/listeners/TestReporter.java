@@ -32,11 +32,12 @@ public class TestReporter implements IReporter {
     /**
      * Removes intermediate retry failures from test results, keeping only final outcomes.
      */
-    private void removeRetryFailures(ITestNGMethod[] methods) {
+    private void removeRetryFailures(IResultMap resultMap) {
         // This is a simplified version. In a full implementation, you'd:
-        // 1. Check each method for retry analyzer
-        // 2. Remove duplicate results where retry occurred
-        // 3. Keep only the final result
+        // 1. Get all results from the IResultMap
+        // 2. Identify the ones that are retried failures
+        // 3. Remove duplicate results where retry occurred
+        // 4. Keep only the final result
 
         // For now, this provides the framework for complete cleanup
         // The TestListener already handles most of the deduplication
