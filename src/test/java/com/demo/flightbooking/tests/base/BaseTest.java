@@ -115,7 +115,6 @@ public class BaseTest {
      * test entry in the ExtentReport.
      * @param method The test method that is about to be run.
      */
-    @Parameters("browser")
     @BeforeMethod(alwaysRun = true)
     public void setUp(Method method) {
         // ✅ ROBUST MDC: Set context for THIS test method's thread
