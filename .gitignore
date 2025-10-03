@@ -59,3 +59,6 @@
 /reports/
 /test-output/
 /screenshots/
+
+#temp files and folders
+/temp/
