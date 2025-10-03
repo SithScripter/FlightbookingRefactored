@@ -17,7 +17,7 @@ import java.util.Date;
  */
 public class ScreenshotUtils {
 
-    private static final String SCREENSHOT_DIR = "target/screenshots/";
+    private static final String SCREENSHOT_DIR = "reports/screenshots/";
 
     /**
      * Captures a screenshot of the current browser window and saves it to a file.
