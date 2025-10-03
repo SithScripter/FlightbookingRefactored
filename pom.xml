@@ -120,7 +120,7 @@
                     <properties>
                         <property>
                             <name>listener</name>
-                            <value>org.testng.reporters.JUnitXMLReporter,com.demo.flightbooking.listeners.TestListener</value>
+                            <value>org.testng.reporters.JUnitXMLReporter,com.demo.flightbooking.listeners.TestListener,com.demo.flightbooking.listeners.TestReporter</value>
                         </property>
                     </properties>
                 </configuration>

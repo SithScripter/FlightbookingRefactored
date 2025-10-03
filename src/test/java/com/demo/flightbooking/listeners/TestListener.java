@@ -90,6 +90,7 @@ public class TestListener implements ITestListener, IAnnotationTransformer {
 				test.log(Status.WARNING, "Screenshot capture failed: " + e.getMessage());
 			}
 		}
+	}
 
 	@Override
 	public void onTestSkipped(ITestResult result) {

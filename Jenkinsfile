@@ -49,11 +49,7 @@ pipeline {
         // This stage prepares the environment by starting the Selenium Grid.
         stage('Initialize & Start Grid') {
             when {
-                expression { 
-                    def branchName = env.BRANCH_NAME
-                    return branchName in branchConfig.activeBranches || 
-                           branchConfig.experimentalBranches.any { pattern -> branchName.matches(pattern.replace('*', '.*')) }
-                }
+                expression { return env.BRANCH_NAME in branchConfig.pipelineBranches }
             }
             agent {
                 docker {
@@ -86,9 +82,9 @@ pipeline {
         stage('Build & Run Parallel Tests') {
             when {
                 expression { 
-                    def branchName = env.BRANCH_NAME
-                    return branchName in branchConfig.activeBranches || 
-                           branchConfig.experimentalBranches.any { pattern -> branchName.matches(pattern.replace('*', '.*')) }
+                    def branchName = env.BRANCH_NAME ?: 'unknown'
+                    echo "DEBUG: Branch name for test execution: ${branchName}"
+                    return branchName in branchConfig.pipelineBranches
                 }
             }
             agent {
@@ -120,11 +116,7 @@ pipeline {
 
         stage('Post-Build Actions') {
             when {
-                expression { 
-                    def branchName = env.BRANCH_NAME
-                    return branchName in branchConfig.activeBranches || 
-                           branchConfig.experimentalBranches.any { pattern -> branchName.matches(pattern.replace('*', '.*')) }
-                }
+                expression { return env.BRANCH_NAME in branchConfig.pipelineBranches }
             }
             //Force agent to run on the same machine as the build
             agent {
@@ -139,8 +131,7 @@ pipeline {
                     echo "DEBUG: Suite name at start of post-build is '${env.SUITE_TO_RUN}'"
 
                     // ✅ Use centralized config for grid shutdown
-                    if (env.BRANCH_NAME in branchConfig.activeBranches || 
-                        branchConfig.experimentalBranches.any { pattern -> env.BRANCH_NAME.matches(pattern.replace('*', '.*')) }) {
+                    if (env.BRANCH_NAME in branchConfig.pipelineBranches) {
                         echo '🧹 Shutting down Selenium Grid...'
                         stopDockerGrid('docker-compose-grid.yml')
                     }
@@ -192,7 +183,14 @@ pipeline {
 
                     // ✅ Unstash screenshots from test stage for archiving
                     echo "Unstashing screenshots for archiving..."
-                    unstash 'test-screenshots'
+                    script {
+                        try {
+                            unstash 'test-screenshots'
+                        } catch (Exception e) {
+                            echo "⚠️ Screenshot stash not found (test stage may have failed before stashing): ${e.getMessage()}"
+                            // Continue with archiving - no screenshots to archive
+                        }
+                    }
                     // Archive screenshots separately since shared library doesn't include them
                     archiveArtifacts artifacts: 'reports/screenshots/**', allowEmptyArchive: true
 

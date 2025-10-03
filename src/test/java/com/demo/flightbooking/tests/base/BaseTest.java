@@ -122,12 +122,24 @@ public class BaseTest {
      * test entry in the ExtentReport.
      * @param method The test method that is about to be run.
      */
-    @Parameters("browser")
     @BeforeMethod(alwaysRun = true)
     public void setUp(String browser, Method method) {
+        // ✅ ROBUST MDC: Set context for THIS test method's thread
+        String mdcSuite = System.getProperty("test.suite", "unknown");
+        String mdcBrowser = (browser != null && !browser.isBlank()) ? browser.toUpperCase() : "UNKNOWN";
+
+        // Set thread name for log4j %X{thread} pickup
+        String customThreadName = "TestNG-test-" + mdcSuite.toLowerCase() + "-" + browser.toLowerCase() + "-1";
+        Thread.currentThread().setName(customThreadName);
+
+        // Set MDC context for THIS thread
+        ThreadContext.put("suite", mdcSuite.toUpperCase());
+        ThreadContext.put("browser", mdcBrowser);
+        ThreadContext.put("testname", method.getName());
+
+        // Set browser for current thread
         DriverManager.setBrowser(browser);
-        WebDriver driver = DriverManager.getDriver(); // Launch browser
-        logger.info("🚀 WebDriver initialized for test: {}", method.getName());
+        logger.info("✅ Browser set to: {} for test: {}", browser.toUpperCase(), method.getName());
 
         String browserName = DriverManager.getBrowser().toUpperCase();
         // Create a test entry in report
@@ -166,6 +178,9 @@ public class BaseTest {
         DriverManager.quitDriver();
         logger.info("🧹 WebDriver quit after test: {}", result.getMethod().getMethodName());
         ExtentManager.unload();
+        
+        // ✅ CRITICAL: Clear MDC context for thread reuse (prevents race conditions)
+        ThreadContext.clearAll();
     }
 
     /**
