@@ -83,8 +83,9 @@ public class BaseTest {
         // Set actual thread name so log4j %X{thread} picks it up correctly
         Thread.currentThread().setName(customThreadName);
 
-        ThreadContext.put("suite", mdcSuite.toUpperCase());
-        ThreadContext.put("browser", mdcBrowser);
+        // Note: MDC context is now set per-method in @BeforeMethod for proper isolation
+        // ThreadContext.put("suite", mdcSuite.toUpperCase());
+        // ThreadContext.put("browser", mdcBrowser);
 
         // Set browser for current thread
         DriverManager.setBrowser(browser);
@@ -139,13 +140,16 @@ public class BaseTest {
 
         // Set browser for current thread
         DriverManager.setBrowser(browser);
-        logger.info("✅ Browser set to: {} for test: {}", browser.toUpperCase(), method.getName());
+        
+        // ✅ Use logger after MDC is set so it picks up the context
+        Logger methodLogger = LogManager.getLogger(this.getClass());
+        methodLogger.info("✅ Browser set to: {} for test: {}", browser.toUpperCase(), method.getName());
 
         String browserName = DriverManager.getBrowser().toUpperCase();
         // Create a test entry in report
         ExtentTest test = extentReports.get().createTest(method.getName() + " - " + browserName);
         ExtentManager.setTest(test);
-        logger.info("📝 ExtentTest created for test: {} on {}", method.getName(), browserName);
+        methodLogger.info("📝 ExtentTest created for test: {} on {}", method.getName(), browserName);
     }
 
     /**
@@ -157,6 +161,9 @@ public class BaseTest {
      */
     @AfterMethod(alwaysRun = true)
     public void tearDown(ITestResult result) {
+        // ✅ Use logger after MDC is still set (cleared at the end)
+        Logger methodLogger = LogManager.getLogger(this.getClass());
+        
         ExtentTest test = ExtentManager.getTest();
         WebDriver driver = DriverManager.getDriver();
 
@@ -167,16 +174,18 @@ public class BaseTest {
                 failureSummaries.add(failureMsg);
 
                 String screenshotPath = ScreenshotUtils.captureScreenshot(driver, result.getMethod().getMethodName());
-                test.addScreenCaptureFromPath(screenshotPath);
+                // ✅ Fix screenshot path for ExtentReports - needs to be relative from report directory
+                String relativeScreenshotPath = "../screenshots/" + new java.io.File(screenshotPath).getName();
+                test.addScreenCaptureFromPath(relativeScreenshotPath);
                 test.fail(result.getThrowable());
-                logger.error("❌ Test failed: {} | Screenshot: {}", result.getMethod().getMethodName(), screenshotPath);
+                methodLogger.error("❌ Test failed: {} | Screenshot: {}", result.getMethod().getMethodName(), screenshotPath);
             } else {
                 test.log(Status.PASS, "✅ Test passed");
             }
         }
 
         DriverManager.quitDriver();
-        logger.info("🧹 WebDriver quit after test: {}", result.getMethod().getMethodName());
+        methodLogger.info("🧹 WebDriver quit after test: {}", result.getMethod().getMethodName());
         ExtentManager.unload();
         
         // ✅ CRITICAL: Clear MDC context for thread reuse (prevents race conditions)
