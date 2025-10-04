@@ -126,6 +126,7 @@ pipeline {
                 }
             }
 
+            steps {
                 script {
                     echo "DEBUG: Suite name at start of post-build is '${env.SUITE_TO_RUN}'"
 
