@@ -98,11 +98,9 @@ pipeline {
 
     post {
         always {
-            // Step 1: Get any available agent to run our scripted logic
-            node('any') {
-                script {
-                    // Step 2: Use the scripted docker command to run steps inside our container
-                    docker.image('flight-booking-agent:latest').inside('-u root -v /var/run/docker.sock:/var/run/docker.sock --entrypoint=""') {
+            // This 'script' block will run on the agent of the last stage
+            script {
+                docker.image('flight-booking-agent:latest').inside('-u root -v /var/run/docker.sock:/var/run/docker.sock --entrypoint=""') {
 
                         echo "--- Starting Guaranteed Post-Build Processing ---"
 
@@ -157,14 +155,12 @@ pipeline {
             echo "❌ Build FAILED. A critical error occurred in one of the stages."
         }
         cleanup {
-            // This is GUARANTEED to run as the absolute last step.
-            node('any') {
-                script {
-                    docker.image('flight-booking-agent:latest').inside('-u root -v /var/run/docker.sock:/var/run/docker.sock --entrypoint=""') {
-                        if (env.BRANCH_NAME in branchConfig.pipelineBranches) {
-                            echo '🧹 GUARANTEED CLEANUP: Shutting down Selenium Grid...'
-                            stopDockerGrid('docker-compose-grid.yml')
-                        }
+            // This will also run on the agent of the last stage
+            script {
+                docker.image('flight-booking-agent:latest').inside('-u root -v /var/run/docker.sock:/var/run/docker.sock --entrypoint=""') {
+                    if (env.BRANCH_NAME in branchConfig.pipelineBranches) {
+                        echo '🧹 GUARANTEED CLEANUP: Shutting down Selenium Grid...'
+                        stopDockerGrid('docker-compose-grid.yml')
                     }
                 }
             }
