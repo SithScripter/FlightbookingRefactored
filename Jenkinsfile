@@ -216,12 +216,17 @@ pipeline {
         cleanup {
             // This is GUARANTEED to run last, making it the perfect place for resource cleanup
             node('any') {
-                // Use docker container for cleanup operations
-                docker.image('flight-booking-agent:latest').inside('-u root -v /var/run/docker.sock:/var/run/docker.sock --entrypoint=""') {
+                // Use shell commands for cleanup operations since docker syntax has issues in cleanup blocks
+                sh '''
                     echo '🧹 GUARANTEED CLEANUP: Shutting down Selenium Grid...'
-                    // NOTE: It is safe to call stopDockerGrid even if the grid is already down.
-                    stopDockerGrid('docker-compose-grid.yml')
-                }
+                    # Check if docker-compose file exists and run stop command
+                    if [ -f "docker-compose-grid.yml" ]; then
+                        docker-compose -f docker-compose-grid.yml down || true
+                        echo "Selenium Grid shutdown completed"
+                    else
+                        echo "docker-compose-grid.yml not found, skipping grid shutdown"
+                    fi
+                '''
             }
         }
     }
