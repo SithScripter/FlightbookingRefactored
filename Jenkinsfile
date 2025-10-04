@@ -99,7 +99,7 @@ pipeline {
     post {
         always {
             // Step 1: Get any available agent to run our scripted logic
-            node {
+            node('any') {
                 script {
                     // Step 2: Use the scripted docker command to run steps inside our container
                     docker.image('flight-booking-agent:latest').inside('-u root -v /var/run/docker.sock:/var/run/docker.sock --entrypoint=""') {
@@ -158,7 +158,7 @@ pipeline {
         }
         cleanup {
             // This is GUARANTEED to run as the absolute last step.
-            node {
+            node('any') {
                 script {
                     docker.image('flight-booking-agent:latest').inside('-u root -v /var/run/docker.sock:/var/run/docker.sock --entrypoint=""') {
                         if (env.BRANCH_NAME in branchConfig.pipelineBranches) {
