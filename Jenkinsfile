@@ -213,21 +213,5 @@ pipeline {
                 echo "✅ Build SUCCESS. All tests passed."
             }
         }
-        cleanup {
-            // This is GUARANTEED to run last, making it the perfect place for resource cleanup
-            node('any') {
-                // Use shell commands for cleanup operations since docker syntax has issues in cleanup blocks
-                sh '''
-                    echo '🧹 GUARANTEED CLEANUP: Shutting down Selenium Grid...'
-                    # Check if docker-compose file exists and run stop command
-                    if [ -f "docker-compose-grid.yml" ]; then
-                        docker-compose -f docker-compose-grid.yml down || true
-                        echo "Selenium Grid shutdown completed"
-                    else
-                        echo "docker-compose-grid.yml not found, skipping grid shutdown"
-                    fi
-                '''
-            }
-        }
     }
 }
