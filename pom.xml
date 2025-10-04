@@ -108,8 +108,8 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>${maven.surefire.version}</version>
                 <configuration>
-                    <!-- Fail build when tests fail (standard Maven behavior) -->
-                    <testFailureIgnore>false</testFailureIgnore>
+                    <!-- Allow build to succeed even when tests fail (for UNSTABLE status) -->
+                    <testFailureIgnore>true</testFailureIgnore>
                     <!-- Allow overriding test suite from CLI -->
                     <suiteXmlFiles>
                         <suiteXmlFile>${suiteXmlFile}</suiteXmlFile>

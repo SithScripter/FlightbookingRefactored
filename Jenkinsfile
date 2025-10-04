@@ -177,21 +177,37 @@ pipeline {
 
     post {
         always {
-            script {
-                echo "Publishing test results and handling screenshots..."
+            // Add a 'node' block to provide execution context for post-build steps
+            node {
+                echo "Publishing test results and handling reports..."
 
-                // Native Jenkins junit step - automatically sets build status
+                // Native Jenkins junit step - automatically sets build to UNSTABLE on failures
                 junit testResults: 'target/surefire-reports/**/*.xml', allowEmptyResults: true
 
-                // Handle screenshots (unstashed from test stage)
+                // Archive your existing reports as before
+                archiveArtifacts artifacts: 'reports/**/*', allowEmptyArchive: true
+                publishHTML(target: [
+                    reportDir: 'reports',
+                    reportFiles: 'index.html',
+                    reportName: 'Test Automation Dashboard'
+                ])
+
+                // Unstash and archive screenshots
                 echo "Unstashing and archiving screenshots..."
-                unstash 'test-screenshots'
-                archiveArtifacts artifacts: 'reports/screenshots/**', allowEmptyArchive: true
+                script {
+                    try {
+                        unstash 'test-screenshots'
+                        archiveArtifacts artifacts: 'reports/screenshots/**', allowEmptyArchive: true
+                    } catch (Exception e) {
+                        echo "⚠️ Screenshot stash not found (tests may have failed before stashing): ${e.getMessage()}"
+                    }
+                }
             }
         }
         unstable {
             script {
                 echo "⚠️ Build is UNSTABLE due to test failures. Check the 'Test Result' tab for details."
+                // Future: Add notification logic here
             }
         }
         failure {
