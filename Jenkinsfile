@@ -109,91 +109,65 @@ pipeline {
                     }
                 }
                 // ✅ Stash screenshots for cross-container transfer to post block
-                echo "Stashing screenshots for archiving..."
-                stash name: 'test-screenshots', includes: 'reports/screenshots/**', allowEmpty: true
+                echo "Stashing build artifacts (reports, screenshots, test results)..."
+                stash name: 'build-artifacts', includes: 'reports/**, target/surefire-reports/**', allowEmpty: true
             }
         }
 
-        stage('Post-Build Actions') {
-            when {
-                expression { return env.BRANCH_NAME in branchConfig.pipelineBranches }
-            }
-            //Force agent to run on the same machine as the build
-            agent {
-                docker {
-                    image 'flight-booking-agent:latest'
-                    args '-u root -v /var/run/docker.sock:/var/run/docker.sock --entrypoint=""'
-                }
-            }
-
-            steps {
-                script {
-                    echo "DEBUG: Suite name at start of post-build is '${env.SUITE_TO_RUN}'"
-
-                    // Generate HTML dashboard using shared library
-                    generateDashboard(env.SUITE_TO_RUN, "${env.BUILD_NUMBER}")
-
-                    // Archive and publish reports using shared library
-                    archiveAndPublishReports()
-
-                    // ✅ Use centralized config for Qase integration
-                    if (env.BRANCH_NAME in branchConfig.productionCandidateBranches) {
-                        echo "🚀 Running notifications for production-candidate branch: ${env.BRANCH_NAME}"
-                        try {
-                            def qaseConfig = readJSON file: 'cicd/qase_config.json'
-                            def suiteSettings = qaseConfig[env.SUITE_TO_RUN]
-                            if (!suiteSettings) {
-                                error "❌ Qase config missing for suite: ${env.SUITE_TO_RUN}"
-                            }
-
-                            // Use parameter override if provided, otherwise use config file.
-                            def qaseIds = (params.QASE_TEST_CASE_IDS?.trim()) ? params.QASE_TEST_CASE_IDS : suiteSettings.testCaseIds
-
-                            updateQase(
-                                projectCode: 'FB',
-                                credentialsId: 'qase-api-token',
-                                testCaseIds: qaseIds
-                            )
-                            sendBuildSummaryEmail(
-                                suiteName: env.SUITE_TO_RUN,
-                                emailCredsId: 'recipient-email-list'
-                            )
-                        } catch (err) {
-                            echo "⚠️ Post-build notification failed: ${err.getMessage()}"
-                        }
-                    } else {
-                        echo "ℹ️ Skipping post-build notifications for branch: ${env.BRANCH_NAME}"
-                    }
-                }
-            }
-        }
     }
 
     post {
         // 'always' ensures these steps run regardless of the build's success or failure.
         always {
-            script {
-                // Use the 'inside' step to run all cleanup, reporting, and notifications inside our container.
-                // This is needed because we're using 'agent none' at the top level.
-                docker.image('flight-booking-agent:latest').inside('-u root -v /var/run/docker.sock:/var/run/docker.sock --entrypoint=""') {
-
-                    echo "Publishing test results and handling screenshots..."
-
-                    // ✅ ADD: Native Jenkins junit step - automatically sets build to UNSTABLE on failures
-                    junit testResults: 'target/surefire-reports/**/*.xml', allowEmptyResults: true
-
-                    // ✅ Unstash screenshots from test stage for archiving
-                    echo "Unstashing screenshots for archiving..."
+            node {
+                agent {
+                    docker {
+                        image 'flight-booking-agent:latest'
+                        args '-u root -v /var/run/docker.sock:/var/run/docker.sock --entrypoint=""'
+                    }
+                }
+                steps {
                     script {
+                        echo "--- Starting Guaranteed Post-Build Processing ---"
+
                         try {
-                            unstash 'test-screenshots'
-                        } catch (Exception e) {
-                            echo "⚠️ Screenshot stash not found (test stage may have failed before stashing): ${e.getMessage()}"
-                            // Continue with archiving - no screenshots to archive
+                            unstash 'build-artifacts'
+                        } catch (e) {
+                            echo "⚠️ Build artifacts not found to unstash. This is expected if the build failed early."
+                        }
+
+                        // 1. Publish Test Results (sets build status to UNSTABLE on test failures)
+                        junit testResults: 'target/surefire-reports/**/*.xml', allowEmptyResults: true
+
+                        // 2. Generate and Publish HTML Reports (from shared library)
+                        generateDashboard(env.SUITE_TO_RUN, "${env.BUILD_NUMBER}")
+                        archiveAndPublishReports()
+
+                        // 3. Handle Notifications (Qase, Email)
+                        if (env.BRANCH_NAME in branchConfig.productionCandidateBranches) {
+                            echo "🚀 Running notifications for production-candidate branch..."
+                            try {
+                                def qaseConfig = readJSON file: 'cicd/qase_config.json'
+                                def suiteSettings = qaseConfig[env.SUITE_TO_RUN]
+                                if (suiteSettings) {
+                                    def qaseIds = (params.QASE_TEST_CASE_IDS?.trim()) ? params.QASE_TEST_CASE_IDS : suiteSettings.testCaseIds
+                                    updateQase(
+                                        projectCode: 'FB',
+                                        credentialsId: 'qase-api-token',
+                                        testCaseIds: qaseIds
+                                    )
+                                    sendBuildSummaryEmail(
+                                        suiteName: env.SUITE_TO_RUN,
+                                        emailCredsId: 'recipient-email-list'
+                                    )
+                                }
+                            } catch (err) {
+                                echo "⚠️ Notification step failed: ${err.getMessage()}"
+                            }
+                        } else {
+                            echo "ℹ️ Skipping notifications for branch: ${env.BRANCH_NAME}"
                         }
                     }
-                    // Archive screenshots separately since shared library doesn't include them
-                    archiveArtifacts artifacts: 'reports/screenshots/**', allowEmptyArchive: true
                 }
             }
         }
@@ -214,13 +188,19 @@ pipeline {
             }
         }
         cleanup {
-            node('any') {
-                docker.image('flight-booking-agent:latest').inside('-u root -v /var/run/docker.sock:/var/run/docker.sock --entrypoint=""') {
+            // This is GUARANTEED to run as the absolute last step. This is the ONLY place for cleanup.
+            node {
+                 agent {
+                    docker {
+                        image 'flight-booking-agent:latest'
+                        args '-u root -v /var/run/docker.sock:/var/run/docker.sock --entrypoint=""'
+                    }
+                }
+                steps {
                     script {
-                        // Only shutdown grid for branches that actually start it
                         if (env.BRANCH_NAME in branchConfig.pipelineBranches) {
-                            echo '🧹 GUARANTEED CLEANUP: Shutting down Selenium Grid...'
-                            stopDockerGrid('docker-compose-grid.yml')
+                             echo '🧹 GUARANTEED CLEANUP: Shutting down Selenium Grid...'
+                             stopDockerGrid('docker-compose-grid.yml')
                         }
                     }
                 }
