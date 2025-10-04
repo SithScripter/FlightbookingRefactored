@@ -130,6 +130,12 @@ pipeline {
                 script {
                     echo "DEBUG: Suite name at start of post-build is '${env.SUITE_TO_RUN}'"
 
+                    // ✅ Generate HTML dashboard using shared library
+                    generateDashboard(env.SUITE_TO_RUN, "${env.BUILD_NUMBER}")
+                    
+                    // ✅ Archive and publish reports using shared library  
+                    archiveAndPublishReports()
+
                     // ✅ Use centralized config for grid shutdown
                     if (env.BRANCH_NAME in branchConfig.pipelineBranches) {
                         echo '🧹 Shutting down Selenium Grid...'
@@ -164,62 +170,38 @@ pipeline {
                     } else {
                         echo "ℹ️ Skipping post-build notifications for branch: ${env.BRANCH_NAME}"
                     }
-                } // ✅ ADDED: This brace closes the script block
+                }
             }
-        } // This brace closes the 'Post-Build Actions' stage
-    } // ✅ ADDED: This brace closes the 'stages' block
+        }
+    }
 
     post {
-        // 'always' ensures these steps run regardless of the build's success or failure.
         always {
             script {
-                // Use the 'inside' step to run all cleanup, reporting, and notifications inside our container.
-                // This is needed because we're using 'agent none' at the top level.
-                docker.image('flight-booking-agent:latest').inside('-u root -v /var/run/docker.sock:/var/run/docker.sock --entrypoint=""') {
+                echo "Publishing test results and handling screenshots..."
 
-                    echo "Generating dashboard for suite: ${env.SUITE_TO_RUN}"
-                    generateDashboard(env.SUITE_TO_RUN, "${env.BUILD_NUMBER}")
-                    archiveAndPublishReports()
+                // Native Jenkins junit step - automatically sets build status
+                junit testResults: 'target/surefire-reports/**/*.xml', allowEmptyResults: true
 
-                    // ✅ Unstash screenshots from test stage for archiving
-                    echo "Unstashing screenshots for archiving..."
-                    script {
-                        try {
-                            unstash 'test-screenshots'
-                        } catch (Exception e) {
-                            echo "⚠️ Screenshot stash not found (test stage may have failed before stashing): ${e.getMessage()}"
-                            // Continue with archiving - no screenshots to archive
-                        }
-                    }
-                    // Archive screenshots separately since shared library doesn't include them
-                    archiveArtifacts artifacts: 'reports/screenshots/**', allowEmptyArchive: true
-
-                    // ======================================================
-                    // FIXED QUALITY GATE LOGIC - BUILD STATUS FIRST
-                    // ======================================================
-                    echo "Evaluating Quality Gate..."
-
-                    // First, check the overall build status. If it's not 'SUCCESS' or 'UNSTABLE'
-                    // it means a fatal error (like compilation) occurred.
-                    if (currentBuild.result == null || currentBuild.result == 'SUCCESS') {
-                        // If the build itself was successful, now we can safely check for test failures.
-                        echo "Build step completed successfully. Now checking test results..."
-                        def testFailures = checkTestFailures()
-
-                        if (testFailures > 0) {
-                            // Mark the build as UNSTABLE if there are test failures.
-                            currentBuild.result = 'UNSTABLE'
-                            echo "Quality Gate: FAILED - Build succeeded, but ${testFailures} test failures were found."
-                        } else {
-                            // This is the only true "PASS" condition.
-                            echo "Quality Gate: PASSED - Build succeeded and all tests passed."
-                        }
-                    } else {
-                        // If the build was already marked as FAILURE or ABORTED, the gate automatically fails.
-                        // No need to check for test results as they likely didn't run.
-                        echo "Quality Gate: FAILED - The build did not complete successfully (Status: ${currentBuild.result})."
-                    }
-                }
+                // Handle screenshots (unstashed from test stage)
+                echo "Unstashing and archiving screenshots..."
+                unstash 'test-screenshots'
+                archiveArtifacts artifacts: 'reports/screenshots/**', allowEmptyArchive: true
+            }
+        }
+        unstable {
+            script {
+                echo "⚠️ Build is UNSTABLE due to test failures. Check the 'Test Result' tab for details."
+            }
+        }
+        failure {
+            script {
+                echo "❌ Build FAILED. There was an error during the build or test execution."
+            }
+        }
+        success {
+            script {
+                echo "✅ Build SUCCESS. All tests passed."
             }
         }
     }

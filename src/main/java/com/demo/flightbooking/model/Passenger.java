@@ -1,10 +1,13 @@
 package com.demo.flightbooking.model;
 
+import com.demo.flightbooking.utils.MaskingUtil;
+
 /**
  * A data model representing a passenger and their booking details.
- * This is a Java Record, which is a modern, concise way to create immutable
- * data-carrier classes, reducing boilerplate code for constructors, getters,
- * equals(), hashCode(), and toString().
+ * This is a Java Record, a modern way to create immutable data-carrier classes.
+ *
+ * SECURITY: The toString() method is explicitly overridden to mask sensitive data
+ * like credit card numbers to prevent accidental exposure in logs and reports.
  */
 public record Passenger(
     String origin,
@@ -21,5 +24,30 @@ public record Passenger(
     String year,
     String cardName,
     int age,
-    String gender
-) {}
+    String gender) {
+
+    /**
+     * Custom toString() implementation that masks the credit card number.
+     * This is a critical security measure for compliance.
+     */
+    @Override
+    public String toString() {
+        return "Passenger[" +
+               "origin='" + origin + '\'' +
+               ", destination='" + destination + '\'' +
+               ", firstName='" + firstName + '\'' +
+               ", lastName='" + lastName + '\'' +
+               ", address='" + address + '\'' +
+               ", city='" + city + '\'' +
+               ", state='" + state + '\'' +
+               ", zipCode='" + zipCode + '\'' +
+               ", cardType='" + cardType + '\'' +
+               ", cardNumber='" + MaskingUtil.maskCardNumber(cardNumber) + '\'' +  // MASKED DATA
+               ", month='" + month + '\'' +
+               ", year='" + year + '\'' +
+               ", cardName='" + cardName + '\'' +
+               ", age=" + age +
+               ", gender='" + gender + '\'' +
+               ']';
+    }
+}
