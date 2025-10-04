@@ -81,10 +81,10 @@ pipeline {
                         def mvnBase = "mvn clean test -P ${env.SUITE_TO_RUN} -Denv=${params.TARGET_ENVIRONMENT} -Dtest.suite=${env.SUITE_TO_RUN} -Dbrowser.headless=true"
                         parallel(
                             Chrome: {
-                                sh "${mvnBase} -Dbrowser=CHROME -Dreport.dir=chrome -Dmaven.repo.local=.m2-chrome"
+                                sh "${mvnBase} -Dbrowser=chrome -Dreport.dir=chrome -Dmaven.repo.local=.m2-chrome"
                             },
                             Firefox: {
-                                sh "${mvnBase} -Dbrowser=FIREFOX -Dreport.dir=firefox -Dmaven.repo.local=.m2-firefox"
+                                sh "${mvnBase} -Dbrowser=firefox -Dreport.dir=firefox -Dmaven.repo.local=.m2-firefox"
                             }
                         )
                     }
