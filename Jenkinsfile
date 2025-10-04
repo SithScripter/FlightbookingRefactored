@@ -126,17 +126,16 @@ pipeline {
                 }
             }
 
-            steps {
                 script {
                     echo "DEBUG: Suite name at start of post-build is '${env.SUITE_TO_RUN}'"
 
-                    // ✅ Generate HTML dashboard using shared library
+                    // Generate HTML dashboard using shared library
                     generateDashboard(env.SUITE_TO_RUN, "${env.BUILD_NUMBER}")
-                    
-                    // ✅ Archive and publish reports using shared library  
+
+                    // Archive and publish reports using shared library
                     archiveAndPublishReports()
 
-                    // ✅ Use centralized config for grid shutdown
+                    // Use centralized config for grid shutdown
                     if (env.BRANCH_NAME in branchConfig.pipelineBranches) {
                         echo '🧹 Shutting down Selenium Grid...'
                         stopDockerGrid('docker-compose-grid.yml')
@@ -176,31 +175,30 @@ pipeline {
     }
 
     post {
+        // 'always' ensures these steps run regardless of the build's success or failure.
         always {
-            // Add a 'node' block to provide execution context for post-build steps
-            node('any') {
-                echo "Publishing test results and handling reports..."
+            script {
+                // Use the 'inside' step to run all cleanup, reporting, and notifications inside our container.
+                // This is needed because we're using 'agent none' at the top level.
+                docker.image('flight-booking-agent:latest').inside('-u root -v /var/run/docker.sock:/var/run/docker.sock --entrypoint=""') {
 
-                // Native Jenkins junit step - automatically sets build to UNSTABLE on failures
-                junit testResults: 'target/surefire-reports/**/*.xml', allowEmptyResults: true
+                    echo "Publishing test results and handling screenshots..."
 
-                // Archive your existing reports as before
-                archiveArtifacts artifacts: 'reports/**/*', allowEmptyArchive: true
-                publishHTML(target: [
-                    reportDir: 'reports',
-                    reportFiles: 'index.html',
-                    reportName: 'Test Automation Dashboard'
-                ])
+                    // ✅ ADD: Native Jenkins junit step - automatically sets build to UNSTABLE on failures
+                    junit testResults: 'target/surefire-reports/**/*.xml', allowEmptyResults: true
 
-                // Unstash and archive screenshots
-                echo "Unstashing and archiving screenshots..."
-                script {
-                    try {
-                        unstash 'test-screenshots'
-                        archiveArtifacts artifacts: 'reports/screenshots/**', allowEmptyArchive: true
-                    } catch (Exception e) {
-                        echo "⚠️ Screenshot stash not found (tests may have failed before stashing): ${e.getMessage()}"
+                    // ✅ Unstash screenshots from test stage for archiving
+                    echo "Unstashing screenshots for archiving..."
+                    script {
+                        try {
+                            unstash 'test-screenshots'
+                        } catch (Exception e) {
+                            echo "⚠️ Screenshot stash not found (test stage may have failed before stashing): ${e.getMessage()}"
+                            // Continue with archiving - no screenshots to archive
+                        }
                     }
+                    // Archive screenshots separately since shared library doesn't include them
+                    archiveArtifacts artifacts: 'reports/screenshots/**', allowEmptyArchive: true
                 }
             }
         }
