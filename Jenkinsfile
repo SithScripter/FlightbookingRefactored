@@ -9,44 +9,30 @@ pipeline {
 
     options {
         // ✅ Prevents Jenkins from doing an initial checkout on the controller.
-        // We will handle the checkout manually inside the correct agent.
         skipDefaultCheckout()
     }
 
     triggers {
-        // ✅ Automatically schedules a build to run every night at approximately 2 AM.
-        // This trigger will be identified by the pipeline to run the 'regression' suite.
         cron('H 2 * * *')
     }
 
     parameters {
-        // ✅ This parameter is now ONLY for manual builds. Automated runs will ignore it.
         choice(name: 'SUITE_NAME', choices: ['smoke', 'regression'], description: 'Select suite (only applies to manual runs).')
-
-        // ✅ The target environment for test execution.
         choice(name: 'TARGET_ENVIRONMENT', choices: ['PRODUCTION', 'STAGING', 'QA'], description: 'Select test environment.')
-
-        // ✅ An optional manual approval gate, used only by the regression suite.
         booleanParam(name: 'MANUAL_APPROVAL', defaultValue: false, description: '🛑 Only relevant if "regression" is selected. Ignored for "smoke".')
-
-        // ✅ An optional override for Qase test case IDs.
         string(name: 'QASE_TEST_CASE_IDS', defaultValue: '', description: 'Optional: Override default Qase IDs.')
     }
 
     stages {
-
-        // This initial stage runs on a lightweight agent to determine which suite to run.
-        // This is a safe and robust pattern that avoids running complex logic in unsupported places.
         stage('Determine Suite') {
             agent any
             steps {
-				script {
-				    env.SUITE_TO_RUN = determineTestSuite()
-				  }
+                script {
+                    env.SUITE_TO_RUN = determineTestSuite()
+                }
             }
         }
 
-        // This stage prepares the environment by starting the Selenium Grid.
         stage('Initialize & Start Grid') {
             when {
                 expression { return env.BRANCH_NAME in branchConfig.pipelineBranches }
@@ -58,11 +44,10 @@ pipeline {
                 }
             }
             steps {
-                initializeTestEnvironment(env.SUITE_TO_RUN)  // Clean orchestration!
+                initializeTestEnvironment(env.SUITE_TO_RUN)
             }
         }
 
-        // This stage is only active for regression runs when the user explicitly toggles it on.
         stage('Approval Gate (Regression Only)') {
             when {
                 allOf {
@@ -71,7 +56,7 @@ pipeline {
                     expression { return params.MANUAL_APPROVAL == true }
                 }
             }
-            agent any 
+            agent any
             steps {
                 timeout(time: 30, unit: 'MINUTES') {
                     input message: "🛑 Proceed with full regression for branch '${env.BRANCH_NAME}'?"
@@ -81,11 +66,7 @@ pipeline {
 
         stage('Build & Run Parallel Tests') {
             when {
-                expression { 
-                    def branchName = env.BRANCH_NAME ?: 'unknown'
-                    echo "DEBUG: Branch name for test execution: ${branchName}"
-                    return branchName in branchConfig.pipelineBranches
-                }
+                expression { return env.BRANCH_NAME in branchConfig.pipelineBranches }
             }
             agent {
                 docker {
@@ -108,35 +89,30 @@ pipeline {
                         )
                     }
                 }
-                // ✅ Stash screenshots for cross-container transfer to post block
+                // Stash all artifacts needed for post-processing
                 echo "Stashing build artifacts (reports, screenshots, test results)..."
                 stash name: 'build-artifacts', includes: 'reports/**, target/surefire-reports/**', allowEmpty: true
             }
         }
-
     }
 
     post {
-        // 'always' ensures these steps run regardless of the build's success or failure.
         always {
+            // Step 1: Get any available agent to run our scripted logic
             node {
-                agent {
-                    docker {
-                        image 'flight-booking-agent:latest'
-                        args '-u root -v /var/run/docker.sock:/var/run/docker.sock --entrypoint=""'
-                    }
-                }
-                steps {
-                    script {
+                script {
+                    // Step 2: Use the scripted docker command to run steps inside our container
+                    docker.image('flight-booking-agent:latest').inside('-u root -v /var/run/docker.sock:/var/run/docker.sock --entrypoint=""') {
+
                         echo "--- Starting Guaranteed Post-Build Processing ---"
 
                         try {
                             unstash 'build-artifacts'
                         } catch (e) {
-                            echo "⚠️ Build artifacts not found to unstash. This is expected if the build failed early."
+                            echo "⚠️ Build artifacts not found to unstash. This is expected if the build failed before stashing."
                         }
 
-                        // 1. Publish Test Results (sets build status to UNSTABLE on test failures)
+                        // 1. Publish Test Results (sets the final build status)
                         junit testResults: 'target/surefire-reports/**/*.xml', allowEmptyResults: true
 
                         // 2. Generate and Publish HTML Reports (from shared library)
@@ -171,36 +147,23 @@ pipeline {
                 }
             }
         }
+        success {
+            echo "✅ Build SUCCESS. All tests passed."
+        }
         unstable {
-            script {
-                echo "⚠️ Build is UNSTABLE due to test failures. Check the 'Test Dashboard' for detailed results."
-                // Future: Add notification logic here
-            }
+            echo "⚠️ Build UNSTABLE. Tests failed. Check the 'Test Dashboard' for detailed results."
         }
         failure {
-            script {
-                echo "❌ Build FAILED. There was an error during the build or test execution."
-            }
-        }
-        success {
-            script {
-                echo "✅ Build SUCCESS. All tests passed."
-            }
+            echo "❌ Build FAILED. A critical error occurred in one of the stages."
         }
         cleanup {
-            // This is GUARANTEED to run as the absolute last step. This is the ONLY place for cleanup.
+            // This is GUARANTEED to run as the absolute last step.
             node {
-                 agent {
-                    docker {
-                        image 'flight-booking-agent:latest'
-                        args '-u root -v /var/run/docker.sock:/var/run/docker.sock --entrypoint=""'
-                    }
-                }
-                steps {
-                    script {
+                script {
+                    docker.image('flight-booking-agent:latest').inside('-u root -v /var/run/docker.sock:/var/run/docker.sock --entrypoint=""') {
                         if (env.BRANCH_NAME in branchConfig.pipelineBranches) {
-                             echo '🧹 GUARANTEED CLEANUP: Shutting down Selenium Grid...'
-                             stopDockerGrid('docker-compose-grid.yml')
+                            echo '🧹 GUARANTEED CLEANUP: Shutting down Selenium Grid...'
+                            stopDockerGrid('docker-compose-grid.yml')
                         }
                     }
                 }
