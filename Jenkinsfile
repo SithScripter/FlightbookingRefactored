@@ -213,5 +213,18 @@ pipeline {
                 echo "✅ Build SUCCESS. All tests passed."
             }
         }
+        cleanup {
+            node('any') {
+                docker.image('flight-booking-agent:latest').inside('-u root -v /var/run/docker.sock:/var/run/docker.sock --entrypoint=""') {
+                    script {
+                        // Only shutdown grid for branches that actually start it
+                        if (env.BRANCH_NAME in branchConfig.pipelineBranches) {
+                            echo '🧹 GUARANTEED CLEANUP: Shutting down Selenium Grid...'
+                            stopDockerGrid('docker-compose-grid.yml')
+                        }
+                    }
+                }
+            }
+        }
     }
 }
