@@ -136,12 +136,6 @@ pipeline {
                     // Archive and publish reports using shared library
                     archiveAndPublishReports()
 
-                    // Use centralized config for grid shutdown
-                    if (env.BRANCH_NAME in branchConfig.pipelineBranches) {
-                        echo '🧹 Shutting down Selenium Grid...'
-                        stopDockerGrid('docker-compose-grid.yml')
-                    }
-
                     // ✅ Use centralized config for Qase integration
                     if (env.BRANCH_NAME in branchConfig.productionCandidateBranches) {
                         echo "🚀 Running notifications for production-candidate branch: ${env.BRANCH_NAME}"
@@ -205,7 +199,7 @@ pipeline {
         }
         unstable {
             script {
-                echo "⚠️ Build is UNSTABLE due to test failures. Check the 'Test Result' tab for details."
+                echo "⚠️ Build is UNSTABLE due to test failures. Check the 'Test Automation Dashboard' for detailed results."
                 // Future: Add notification logic here
             }
         }
@@ -217,6 +211,22 @@ pipeline {
         success {
             script {
                 echo "✅ Build SUCCESS. All tests passed."
+            }
+        }
+        cleanup {
+            // This is GUARANTEED to run last, making it the perfect place for resource cleanup
+            node {
+                agent {
+                    docker {
+                        image 'flight-booking-agent:latest'
+                        args '-u root -v /var/run/docker.sock:/var/run/docker.sock --entrypoint=""'
+                    }
+                }
+                steps {
+                    echo '🧹 GUARANTEED CLEANUP: Shutting down Selenium Grid...'
+                    // NOTE: It is safe to call stopDockerGrid even if the grid is already down.
+                    stopDockerGrid('docker-compose-grid.yml')
+                }
             }
         }
     }
