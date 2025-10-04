@@ -199,7 +199,7 @@ pipeline {
         }
         unstable {
             script {
-                echo "⚠️ Build is UNSTABLE due to test failures. Check the 'Test Automation Dashboard' for detailed results."
+                echo "⚠️ Build is UNSTABLE due to test failures. Check the 'Test Dashboard' for detailed results."
                 // Future: Add notification logic here
             }
         }
@@ -215,14 +215,9 @@ pipeline {
         }
         cleanup {
             // This is GUARANTEED to run last, making it the perfect place for resource cleanup
-            node {
-                agent {
-                    docker {
-                        image 'flight-booking-agent:latest'
-                        args '-u root -v /var/run/docker.sock:/var/run/docker.sock --entrypoint=""'
-                    }
-                }
-                steps {
+            node('any') {
+                // Use docker container for cleanup operations
+                docker.image('flight-booking-agent:latest').inside('-u root -v /var/run/docker.sock:/var/run/docker.sock --entrypoint=""') {
                     echo '🧹 GUARANTEED CLEANUP: Shutting down Selenium Grid...'
                     // NOTE: It is safe to call stopDockerGrid even if the grid is already down.
                     stopDockerGrid('docker-compose-grid.yml')
