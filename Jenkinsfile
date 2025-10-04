@@ -178,7 +178,7 @@ pipeline {
     post {
         always {
             // Add a 'node' block to provide execution context for post-build steps
-            node {
+            node('any') {
                 echo "Publishing test results and handling reports..."
 
                 // Native Jenkins junit step - automatically sets build to UNSTABLE on failures
