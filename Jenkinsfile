@@ -40,7 +40,7 @@ pipeline {
             agent {
                 docker {
                     image 'flight-booking-agent:latest'
-                    args '-u root -v /var/run/docker.sock:/var/run/docker.sock --entrypoint=""'
+                    args '-u root -v /var/run/docker.sock:/var/run/docker.sock --entrypoint="" --network=selenium_grid_network'
                 }
             }
             steps {
