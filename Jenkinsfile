@@ -100,50 +100,53 @@ pipeline {
     }
 
     post {
+        // Define single agent for all post-actions (efficiency + state management)
+        agent {
+            docker {
+                image 'flight-booking-agent:latest'
+                args '-u root -v /var/run/docker.sock:/var/run/docker.sock --entrypoint=""'
+            }
+        }
         always {
-            // This 'script' block will run on the agent of the last stage
             script {
-                docker.image('flight-booking-agent:latest').inside('-u root -v /var/run/docker.sock:/var/run/docker.sock --entrypoint=""') {
+                echo "--- Starting Guaranteed Post-Build Processing ---"
 
-                    echo "--- Starting Guaranteed Post-Build Processing ---"
+                try {
+                    unstash 'build-artifacts'
+                } catch (e) {
+                    echo "⚠️ Build artifacts not found to unstash. This is expected if the build failed before stashing."
+                }
 
+                // 1. Publish Test Results (sets the final build status)
+                junit testResults: 'target/surefire-reports/**/*.xml', allowEmptyResults: true
+
+                // 2. Generate and Publish HTML Reports (from shared library)
+                generateDashboard(env.SUITE_TO_RUN, "${env.BUILD_NUMBER}")
+                archiveAndPublishReports()
+
+                // 3. Handle Notifications (Qase, Email)
+                if (env.BRANCH_NAME in branchConfig.productionCandidateBranches) {
+                    echo "🚀 Running notifications for production-candidate branch..."
                     try {
-                        unstash 'build-artifacts'
-                    } catch (e) {
-                        echo "⚠️ Build artifacts not found to unstash. This is expected if the build failed before stashing."
-                    }
-
-                    // 1. Publish Test Results (sets the final build status)
-                    junit testResults: 'target/surefire-reports/**/*.xml', allowEmptyResults: true
-
-                    // 2. Generate and Publish HTML Reports (from shared library)
-                    generateDashboard(env.SUITE_TO_RUN, "${env.BUILD_NUMBER}")
-                    archiveAndPublishReports()
-
-                    // 3. Handle Notifications (Qase, Email)
-                    if (env.BRANCH_NAME in branchConfig.productionCandidateBranches) {
-                        echo "🚀 Running notifications for production-candidate branch..."
-                        try {
-                            def qaseConfig = readJSON file: 'cicd/qase_config.json'
-                            def suiteSettings = qaseConfig[env.SUITE_TO_RUN]
-                            if (suiteSettings) {
-                                def qaseIds = (params.QASE_TEST_CASE_IDS?.trim()) ? params.QASE_TEST_CASE_IDS : suiteSettings.testCaseIds
-                                updateQase(
-                                    projectCode: 'FB',
-                                    credentialsId: 'qase-api-token',
-                                    testCaseIds: qaseIds
-                                )
-                                sendBuildSummaryEmail(
-                                    suiteName: env.SUITE_TO_RUN,
-                                    emailCredsId: 'recipient-email-list'
-                                )
-                            }
-                        } catch (err) {
-                            echo "⚠️ Notification step failed: ${err.getMessage()}"
+                        def qaseConfig = readJSON file: 'cicd/qase_config.json'
+                        def suiteSettings = qaseConfig[env.SUITE_TO_RUN]
+                        if (suiteSettings) {
+                            def qaseIds = (params.QASE_TEST_CASE_IDS?.trim()) ? params.QASE_TEST_CASE_IDS : suiteSettings.testCaseIds
+                            updateQase(
+                                projectCode: 'FB',
+                                credentialsId: 'qase-api-token',
+                                testCaseIds: qaseIds
+                            )
+                            sendBuildSummaryEmail(
+                                suiteName: env.SUITE_TO_RUN,
+                                emailCredsId: 'recipient-email-list'
+                            )
                         }
-                    } else {
-                        echo "ℹ️ Skipping notifications for branch: ${env.BRANCH_NAME}"
+                    } catch (err) {
+                        echo "⚠️ Notification step failed: ${err.getMessage()}"
                     }
+                } else {
+                    echo "ℹ️ Skipping notifications for branch: ${env.BRANCH_NAME}"
                 }
             }
         }
@@ -157,13 +160,10 @@ pipeline {
             echo "❌ Build FAILED. A critical error occurred in one of the stages."
         }
         cleanup {
-            // This will also run on the agent of the last stage
             script {
-                docker.image('flight-booking-agent:latest').inside('-u root -v /var/run/docker.sock:/var/run/docker.sock --entrypoint=""') {
-                    if (env.BRANCH_NAME in branchConfig.pipelineBranches) {
-                        echo '🧹 GUARANTEED CLEANUP: Shutting down Selenium Grid...'
-                        stopDockerGrid('docker-compose-grid.yml')
-                    }
+                if (env.BRANCH_NAME in branchConfig.pipelineBranches) {
+                    echo '🧹 GUARANTEED CLEANUP: Shutting down Selenium Grid...'
+                    stopDockerGrid('docker-compose-grid.yml')
                 }
             }
         }
