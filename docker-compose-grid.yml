@@ -49,3 +49,4 @@ services:
 networks:
   grid:
     name: selenium_grid_network
+    external: true
