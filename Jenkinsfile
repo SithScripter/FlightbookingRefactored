@@ -40,10 +40,12 @@ pipeline {
             agent {
                 docker {
                     image 'flight-booking-agent:latest'
-                    args '-u root -v /var/run/docker.sock:/var/run/docker.sock --entrypoint="" --network=selenium_grid_network'
+                    args '-u root -v /var/run/docker.sock:/var/run/docker.sock --entrypoint=""'
                 }
             }
             steps {
+                // Create the Docker network explicitly before starting containers
+                sh 'docker network create selenium_grid_network || true'
                 initializeTestEnvironment(env.SUITE_TO_RUN)
             }
         }
