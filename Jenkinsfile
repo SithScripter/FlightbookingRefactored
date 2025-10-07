@@ -151,19 +151,24 @@ pipeline {
         }
         success {
             echo "✅ Build SUCCESS. All tests passed."
+            script {
+                echo "⏱️ Build duration: ${currentBuild.durationString}"
+            }
         }
         unstable {
             echo "⚠️ Build UNSTABLE. Tests failed. Check the 'Test Dashboard' for detailed results."
-            // Notify QA team for test failures
             script {
+                echo "⏱️ Build duration: ${currentBuild.durationString}"
+                // Notify QA team for test failures
                 echo "📧 Notifying QA team for UNSTABLE build on ${env.BRANCH_NAME}"
                 // Add mail or slack if configured
             }
         }
         failure {
             echo "❌ Build FAILED. A critical error occurred in one of the stages."
-            // Notify DevOps team for pipeline failures
             script {
+                echo "⏱️ Build duration: ${currentBuild.durationString}"
+                // Notify DevOps team for pipeline failures
                 echo "📧 Notifying DevOps team for FAILURE build on ${env.BRANCH_NAME}"
                 // Add mail or slack if configured
             }
