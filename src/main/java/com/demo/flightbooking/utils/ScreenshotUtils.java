@@ -22,7 +22,7 @@ public class ScreenshotUtils {
     /**
      * Captures a screenshot of the current browser window and saves it to a file.
      * The screenshot is saved in the 'reports/screenshots' directory with a
-     * unique name based on the test name and a timestamp.
+     * unique name based on the browser, test name and a timestamp.
      *
      * @param driver   The WebDriver instance.
      * @param testName The name of the test for which the screenshot is being taken.
@@ -35,8 +35,9 @@ public class ScreenshotUtils {
             dir.mkdirs();
         }
 
+        String browser = System.getProperty("browser", "unknown");
         String timestamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
-        String fileName = testName + "_" + timestamp + ".png";
+        String fileName = browser + "_" + testName + "_" + timestamp + ".png";
         String relativePath = "screenshots/" + fileName;
         String fullPath = SCREENSHOT_DIR + fileName;
 
