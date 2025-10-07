@@ -27,10 +27,8 @@ pipeline {
         stage('Determine Suite') {
             agent any
             steps {
-                retry(2) {
-                    script {
-                        env.SUITE_TO_RUN = determineTestSuite()
-                    }
+                script {
+                    env.SUITE_TO_RUN = determineTestSuite()
                 }
             }
         }
