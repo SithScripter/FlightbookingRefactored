@@ -11,4 +11,4 @@ COPY cicd/settings.xml /usr/share/maven/conf/settings.xml
 COPY . .
 
 # This command forces Maven to resolve dependencies for all phases, including test plugins
-RUN mvn -B -P force-local-cache dependency:resolve-plugins dependency:go-offline
+RUN mvn -B -P force-local-cache dependency:resolve-plugins dependency:go-offline surefire:test -Dtest=none
