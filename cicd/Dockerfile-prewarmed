@@ -3,12 +3,12 @@
 
 FROM flight-booking-agent:latest
 
+# Override global Maven settings to prevent forced downloads
+COPY cicd/settings.xml /usr/share/maven/conf/settings.xml
+
 # Copy the entire project context (respecting .dockerignore) to the image
 # This is necessary for the 'verify' phase to access source code for compilation
 COPY . .
 
 # This command forces Maven to resolve dependencies for all phases, including test plugins
 RUN mvn -B dependency:resolve-plugins dependency:go-offline
-
-# Override global Maven settings to prevent forced downloads
-COPY cicd/settings.xml /usr/share/maven/conf/settings.xml
