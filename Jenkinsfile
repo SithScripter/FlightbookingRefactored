@@ -146,6 +146,29 @@ pipeline {
                     } else {
                         echo "ℹ️ Skipping notifications for branch: ${env.BRANCH_NAME}"
                     }
+
+                    // Conditional notifications based on build result
+                    if (currentBuild.result == 'UNSTABLE') {
+                        echo "📧 Notifying QA team for UNSTABLE build on ${env.BRANCH_NAME}"
+                        try {
+                            sendBuildSummaryEmail(
+                                suiteName: env.SUITE_TO_RUN,
+                                emailCredsId: 'recipient-email-list'
+                            )
+                        } catch (err) {
+                            echo "⚠️ Email notification failed: ${err.getMessage()}"
+                        }
+                    } else if (currentBuild.result == 'FAILURE') {
+                        echo "📧 Notifying DevOps team for FAILURE build on ${env.BRANCH_NAME}"
+                        try {
+                            sendBuildSummaryEmail(
+                                suiteName: env.SUITE_TO_RUN,
+                                emailCredsId: 'recipient-email-list'
+                            )
+                        } catch (err) {
+                            echo "⚠️ Email notification failed: ${err.getMessage()}"
+                        }
+                    }
                 }
             }
         }
@@ -153,38 +176,16 @@ pipeline {
             echo "✅ Build SUCCESS. All tests passed."
             script {
                 echo "⏱️ Build duration: ${currentBuild.durationString}"
-            }
-        }
         unstable {
             echo "⚠️ Build UNSTABLE. Tests failed. Check the 'Test Dashboard' for detailed results."
             script {
                 echo "⏱️ Build duration: ${currentBuild.durationString}"
-                // Notify QA team for test failures
-                echo "📧 Notifying QA team for UNSTABLE build on ${env.BRANCH_NAME}"
-                try {
-                    sendBuildSummaryEmail(
-                        suiteName: env.SUITE_TO_RUN,
-                        emailCredsId: 'recipient-email-list'
-                    )
-                } catch (err) {
-                    echo "⚠️ Email notification failed: ${err.getMessage()}"
-                }
             }
         }
         failure {
             echo "❌ Build FAILED. A critical error occurred in one of the stages."
             script {
                 echo "⏱️ Build duration: ${currentBuild.durationString}"
-                // Notify DevOps team for pipeline failures
-                echo "📧 Notifying DevOps team for FAILURE build on ${env.BRANCH_NAME}"
-                try {
-                    sendBuildSummaryEmail(
-                        suiteName: env.SUITE_TO_RUN,
-                        emailCredsId: 'recipient-email-list'
-                    )
-                } catch (err) {
-                    echo "⚠️ Email notification failed: ${err.getMessage()}"
-                }
             }
         }
         cleanup {
