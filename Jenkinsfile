@@ -44,6 +44,8 @@ pipeline {
                 }
             }
             steps {
+                // ✅ FORCE IMAGE UPDATE
+                sh 'docker pull flight-booking-agent-prewarmed:latest'
                 retry(2) {
                     // Create the Docker network explicitly before starting containers
                     sh 'docker network create selenium_grid_network || true'
@@ -91,6 +93,10 @@ pipeline {
                 // DIAGNOSTIC STEP 3: VERIFY MAVEN'S REPOSITORY PATH
                 echo "Verifying Maven's configured local repository path..."
                 sh 'mvn help:evaluate -Dexpression=settings.localRepository -q -DforceStdout'
+
+                // DIAGNOSTIC STEP 4: FIND AND PRINT MAVEN SETTINGS.XML FILES
+                echo "Searching for any settings.xml files that could be overriding the cache..."
+                sh 'find / -name "settings.xml" -print -exec echo "--- Contents: {} ---" \\; -exec cat {} \\; -exec echo "--- End of {} ---" \\;'
 
                 echo "🧪 Running parallel tests for: ${env.SUITE_TO_RUN}"
                 retry(2) {
