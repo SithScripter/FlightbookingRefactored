@@ -161,7 +161,14 @@ pipeline {
                 echo "⏱️ Build duration: ${currentBuild.durationString}"
                 // Notify QA team for test failures
                 echo "📧 Notifying QA team for UNSTABLE build on ${env.BRANCH_NAME}"
-                // Add mail or slack if configured
+                try {
+                    sendBuildSummaryEmail(
+                        suiteName: env.SUITE_TO_RUN,
+                        emailCredsId: 'recipient-email-list'
+                    )
+                } catch (err) {
+                    echo "⚠️ Email notification failed: ${err.getMessage()}"
+                }
             }
         }
         failure {
@@ -170,7 +177,14 @@ pipeline {
                 echo "⏱️ Build duration: ${currentBuild.durationString}"
                 // Notify DevOps team for pipeline failures
                 echo "📧 Notifying DevOps team for FAILURE build on ${env.BRANCH_NAME}"
-                // Add mail or slack if configured
+                try {
+                    sendBuildSummaryEmail(
+                        suiteName: env.SUITE_TO_RUN,
+                        emailCredsId: 'recipient-email-list'
+                    )
+                } catch (err) {
+                    echo "⚠️ Email notification failed: ${err.getMessage()}"
+                }
             }
         }
         cleanup {
