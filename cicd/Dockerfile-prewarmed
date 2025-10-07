@@ -6,8 +6,7 @@ FROM flight-booking-agent:latest
 # Copy pom.xml to leverage .dockerignore exclusions and enable dependency resolution
 COPY pom.xml .
 
-# Pre-download all Maven dependencies to /root/.m2 for caching
-RUN mvn dependency:go-offline
-
-# Pre-download Maven plugins (e.g., Surefire) by running test-compile phase
-RUN mvn test-compile
+# This single, robust command resolves all project and plugin dependencies
+# by running the 'verify' phase but tells Maven to never fail the build.
+# This ensures the cache is fully populated without being brittle.
+RUN mvn -B verify --fail-never
