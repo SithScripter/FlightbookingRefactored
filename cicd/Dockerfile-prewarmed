@@ -9,3 +9,6 @@ COPY . .
 
 # This command forces Maven to resolve dependencies for all phases, including test plugins
 RUN mvn -B dependency:resolve-plugins dependency:go-offline
+
+# Override Maven settings to prevent forced downloads
+RUN sed -i '/<id>central<\/id>/a <updatePolicy>never<\/updatePolicy>' /usr/share/maven/conf/settings.xml
