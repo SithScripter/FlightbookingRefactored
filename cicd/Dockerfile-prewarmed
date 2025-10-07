@@ -1,0 +1,10 @@
+# Pre-warmed Docker image for flight booking agent
+# Extends the base agent with pre-downloaded Maven dependencies for faster builds
+
+FROM flight-booking-agent:latest
+
+# Copy pom.xml to leverage .dockerignore exclusions and enable dependency resolution
+COPY pom.xml .
+
+# Pre-download all Maven dependencies to /root/.m2 for caching
+RUN mvn dependency:go-offline

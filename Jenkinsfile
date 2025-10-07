@@ -39,7 +39,7 @@ pipeline {
             }
             agent {
                 docker {
-                    image 'flight-booking-agent:latest'
+                    image 'flight-booking-agent-prewarmed:latest'
                     args '-u root -v /var/run/docker.sock:/var/run/docker.sock --entrypoint=""'
                 }
             }
@@ -74,7 +74,7 @@ pipeline {
             }
             agent {
                 docker {
-                    image 'flight-booking-agent:latest'
+                    image 'flight-booking-agent-prewarmed:latest'
                     args '-u root -v /var/run/docker.sock:/var/run/docker.sock --entrypoint="" --network=selenium_grid_network'
                 }
             }
@@ -86,10 +86,10 @@ pipeline {
                             def mvnBase = "mvn clean test -P ${env.SUITE_TO_RUN} -Denv=${params.TARGET_ENVIRONMENT} -Dtest.suite=${env.SUITE_TO_RUN} -Dbrowser.headless=true"
                             parallel(
                                 Chrome: {
-                                    sh "${mvnBase} -Dbrowser=chrome -Dreport.dir=chrome -Dmaven.repo.local=.m2-chrome"
+                                    sh "${mvnBase} -Dbrowser=chrome -Dreport.dir=chrome"
                                 },
                                 Firefox: {
-                                    sh "${mvnBase} -Dbrowser=firefox -Dreport.dir=firefox -Dmaven.repo.local=.m2-firefox"
+                                    sh "${mvnBase} -Dbrowser=firefox -Dreport.dir=firefox"
                                 }
                             )
                         }
@@ -106,7 +106,7 @@ pipeline {
         always {
             script {
                 // Re-introduce the functional 'inside' wrapper
-                docker.image('flight-booking-agent:latest').inside('-u root -v /var/run/docker.sock:/var/run/docker.sock --entrypoint=""') {
+                docker.image('flight-booking-agent-prewarmed:latest').inside('-u root -v /var/run/docker.sock:/var/run/docker.sock --entrypoint=""') {
                     echo "--- Starting Guaranteed Post-Build Processing ---"
 
                     try {
@@ -190,7 +190,7 @@ pipeline {
         cleanup {
             script {
                 // Re-introduce the functional 'inside' wrapper
-                docker.image('flight-booking-agent:latest').inside('-u root -v /var/run/docker.sock:/var/run/docker.sock --entrypoint=""') {
+                docker.image('flight-booking-agent-prewarmed:latest').inside('-u root -v /var/run/docker.sock:/var/run/docker.sock --entrypoint=""') {
                     if (env.BRANCH_NAME in branchConfig.pipelineBranches) {
                         echo '🧹 GUARANTEED CLEANUP: Shutting down Selenium Grid...'
                         stopDockerGrid('docker-compose-grid.yml')
