@@ -3,8 +3,9 @@
 
 FROM flight-booking-agent:latest
 
-# Copy pom.xml to leverage .dockerignore exclusions and enable dependency resolution
-COPY pom.xml .
+# Copy the entire project context (respecting .dockerignore) to the image
+# This is necessary for the 'verify' phase to access source code for compilation
+COPY . .
 
 # This single, robust command resolves all project and plugin dependencies
 # by running the 'verify' phase but tells Maven to never fail the build.
