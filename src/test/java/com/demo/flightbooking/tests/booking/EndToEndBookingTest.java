@@ -72,7 +72,7 @@ public class EndToEndBookingTest extends BaseTest {
         Assert.assertTrue(urlContainsConfirmation, "Did not navigate to confirmation page after purchase.");
         
         // 🔴 INTENTIONAL FAILURE FOR TESTING - Always fails
-        Assert.assertTrue(false, "Intentional failure to test framework's failure handling, screenshots, and reporting");
+//        Assert.assertTrue(false, "Intentional failure to test framework's failure handling, screenshots, and reporting");
         
         // Additional verification: Check that the confirmation page has loaded correctly
         Assert.assertTrue(driver.getTitle().contains("BlazeDemo"), "Confirmation page title does not match expected.");
