@@ -80,6 +80,18 @@ pipeline {
                 }
             }
             steps {
+                // DIAGNOSTIC STEP 1: VERIFY THE IMAGE ID
+                echo "Verifying Docker Image ID..."
+                sh 'docker images flight-booking-agent-prewarmed'
+
+                // DIAGNOSTIC STEP 2: VERIFY THE CACHE CONTENTS
+                echo "Verifying contents of the pre-warmed cache..."
+                sh 'ls -la /root/.m2/repository/org/apache/maven/surefire'
+
+                // DIAGNOSTIC STEP 3: VERIFY MAVEN'S REPOSITORY PATH
+                echo "Verifying Maven's configured local repository path..."
+                sh 'mvn help:evaluate -Dexpression=settings.localRepository -q -DforceStdout'
+
                 echo "🧪 Running parallel tests for: ${env.SUITE_TO_RUN}"
                 retry(2) {
                     timeout(time: 2, unit: 'HOURS') {
