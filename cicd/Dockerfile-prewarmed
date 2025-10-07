@@ -7,7 +7,5 @@ FROM flight-booking-agent:latest
 # This is necessary for the 'verify' phase to access source code for compilation
 COPY . .
 
-# This single, robust command resolves all project and plugin dependencies
-# by running the 'verify' phase but tells Maven to never fail the build.
-# This ensures the cache is fully populated without being brittle.
-RUN mvn -B verify --fail-never
+# This command forces Maven to resolve dependencies for all phases, including test plugins
+RUN mvn -B dependency:resolve-plugins dependency:go-offline
