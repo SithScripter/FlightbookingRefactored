@@ -44,9 +44,11 @@ pipeline {
                 }
             }
             steps {
-                // Create the Docker network explicitly before starting containers
-                sh 'docker network create selenium_grid_network || true'
-                initializeTestEnvironment(env.SUITE_TO_RUN)
+                retry(2) {
+                    // Create the Docker network explicitly before starting containers
+                    sh 'docker network create selenium_grid_network || true'
+                    initializeTestEnvironment(env.SUITE_TO_RUN)
+                }
             }
         }
 
@@ -79,17 +81,19 @@ pipeline {
             }
             steps {
                 echo "🧪 Running parallel tests for: ${env.SUITE_TO_RUN}"
-                timeout(time: 2, unit: 'HOURS') {
-                    script {
-                        def mvnBase = "mvn clean test -P ${env.SUITE_TO_RUN} -Denv=${params.TARGET_ENVIRONMENT} -Dtest.suite=${env.SUITE_TO_RUN} -Dbrowser.headless=true"
-                        parallel(
-                            Chrome: {
-                                sh "${mvnBase} -Dbrowser=chrome -Dreport.dir=chrome -Dmaven.repo.local=.m2-chrome"
-                            },
-                            Firefox: {
-                                sh "${mvnBase} -Dbrowser=firefox -Dreport.dir=firefox -Dmaven.repo.local=.m2-firefox"
-                            }
-                        )
+                retry(2) {
+                    timeout(time: 2, unit: 'HOURS') {
+                        script {
+                            def mvnBase = "mvn clean test -P ${env.SUITE_TO_RUN} -Denv=${params.TARGET_ENVIRONMENT} -Dtest.suite=${env.SUITE_TO_RUN} -Dbrowser.headless=true"
+                            parallel(
+                                Chrome: {
+                                    sh "${mvnBase} -Dbrowser=chrome -Dreport.dir=chrome -Dmaven.repo.local=.m2-chrome"
+                                },
+                                Firefox: {
+                                    sh "${mvnBase} -Dbrowser=firefox -Dreport.dir=firefox -Dmaven.repo.local=.m2-firefox"
+                                }
+                            )
+                        }
                     }
                 }
                 // Stash all artifacts needed for post-processing
@@ -148,12 +152,41 @@ pipeline {
         }
         success {
             echo "✅ Build SUCCESS. All tests passed."
+            script {
+                echo "⏱️ Build duration: ${currentBuild.durationString}"
+            }
         }
         unstable {
             echo "⚠️ Build UNSTABLE. Tests failed. Check the 'Test Dashboard' for detailed results."
+            script {
+                echo "⏱️ Build duration: ${currentBuild.durationString}"
+                // Notify QA team for test failures
+                echo "📧 Notifying QA team for UNSTABLE build on ${env.BRANCH_NAME}"
+                try {
+                    sendBuildSummaryEmail(
+                        suiteName: env.SUITE_TO_RUN,
+                        emailCredsId: 'recipient-email-list'
+                    )
+                } catch (err) {
+                    echo "⚠️ Email notification failed: ${err.getMessage()}"
+                }
+            }
         }
         failure {
             echo "❌ Build FAILED. A critical error occurred in one of the stages."
+            script {
+                echo "⏱️ Build duration: ${currentBuild.durationString}"
+                // Notify DevOps team for pipeline failures
+                echo "📧 Notifying DevOps team for FAILURE build on ${env.BRANCH_NAME}"
+                try {
+                    sendBuildSummaryEmail(
+                        suiteName: env.SUITE_TO_RUN,
+                        emailCredsId: 'recipient-email-list'
+                    )
+                } catch (err) {
+                    echo "⚠️ Email notification failed: ${err.getMessage()}"
+                }
+            }
         }
         cleanup {
             script {
