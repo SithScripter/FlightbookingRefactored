@@ -68,7 +68,7 @@ pipeline {
             }
         }
         // Force multi branch pipeline to auto trigger
-        
+
         stage('Build & Run Parallel Tests') {
             when {
                 expression { return env.BRANCH_NAME in branchConfig.pipelineBranches }
@@ -103,10 +103,10 @@ pipeline {
                             def mvnBase = "mvn clean test -P ${env.SUITE_TO_RUN} -Denv=${params.TARGET_ENVIRONMENT} -Dtest.suite=${env.SUITE_TO_RUN} -Dbrowser.headless=true"
                             parallel(
                                 Chrome: {
-                                    sh "${mvnBase} -Dbrowser=chrome -Dreport.dir=chrome"
+                                    sh script: "${mvnBase} -Dbrowser=chrome -Dreport.dir=chrome", returnStatus: true
                                 },
                                 Firefox: {
-                                    sh "${mvnBase} -Dbrowser=firefox -Dreport.dir=firefox"
+                                    sh script: "${mvnBase} -Dbrowser=firefox -Dreport.dir=firefox", returnStatus: true
                                 }
                             )
                         }
