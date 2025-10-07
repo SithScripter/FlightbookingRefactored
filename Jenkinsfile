@@ -68,7 +68,7 @@ pipeline {
             }
         }
         // Force multi branch pipeline to auto trigger
-        
+
         stage('Build & Run Parallel Tests') {
             when {
                 expression { return env.BRANCH_NAME in branchConfig.pipelineBranches }
@@ -84,7 +84,7 @@ pipeline {
                 retry(2) {
                     timeout(time: 2, unit: 'HOURS') {
                         script {
-                            def mvnBase = "mvn clean test -P ${env.SUITE_TO_RUN} -Denv=${params.TARGET_ENVIRONMENT} -Dtest.suite=${env.SUITE_TO_RUN} -Dbrowser.headless=true"
+                            def mvnBase = "mvn -P force-local-cache clean test -P ${env.SUITE_TO_RUN} -Denv=${params.TARGET_ENVIRONMENT} -Dtest.suite=${env.SUITE_TO_RUN} -Dbrowser.headless=true"
                             parallel(
                                 Chrome: {
                                     sh script: "${mvnBase} -Dbrowser=chrome -Dreport.dir=chrome", returnStatus: true
