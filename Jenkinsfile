@@ -44,8 +44,6 @@ pipeline {
                 }
             }
             steps {
-                // ✅ FORCE IMAGE UPDATE
-                sh 'docker pull flight-booking-agent-prewarmed:latest'
                 retry(2) {
                     // Create the Docker network explicitly before starting containers
                     sh 'docker network create selenium_grid_network || true'
