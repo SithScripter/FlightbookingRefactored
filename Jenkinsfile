@@ -176,6 +176,8 @@ pipeline {
             echo "✅ Build SUCCESS. All tests passed."
             script {
                 echo "⏱️ Build duration: ${currentBuild.durationString}"
+            }
+        }
         unstable {
             echo "⚠️ Build UNSTABLE. Tests failed. Check the 'Test Dashboard' for detailed results."
             script {
