@@ -168,12 +168,8 @@ public class BaseTest {
                         + " FAILED: " + result.getThrowable().getMessage().split("\n")[0];
                 failureSummaries.add(failureMsg);
 
-                String screenshotPath = ScreenshotUtils.captureScreenshot(driver, result.getMethod().getMethodName());
-                // ✅ Fix screenshot path for ExtentReports - needs to be relative from report directory
-                String relativeScreenshotPath = "../screenshots/" + new java.io.File(screenshotPath).getName();
-                test.addScreenCaptureFromPath(relativeScreenshotPath);
                 test.fail(result.getThrowable());
-                methodLogger.error("❌ Test failed: {} | Screenshot: {}", result.getMethod().getMethodName(), screenshotPath);
+                methodLogger.error("❌ Test failed: {}", result.getMethod().getMethodName());
             } else {
                 test.log(Status.PASS, "✅ Test passed");
             }
