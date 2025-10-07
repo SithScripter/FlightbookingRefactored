@@ -62,3 +62,8 @@
 
 #temp files and folders
 /temp/
+
+# Temporary test files
+VerifyMasking.java
+src/test/java/com/demo/flightbooking/listeners/ExtentTestListener.java
+src/test/java/com/demo/flightbooking/utils/FailingTest.java
