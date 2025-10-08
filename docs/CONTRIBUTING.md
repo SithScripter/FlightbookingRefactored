@@ -1,94 +1,44 @@
-# Contributing Guide
+# Contributing
 
-Thank you for considering contributing to the Flight Booking Test Automation project! This guide will help you get started with contributing.
+Thank you for your interest in this project. It is currently developed and maintained as a portfolio showcase by a single engineer.
 
-## Table of Contents
-- [Code of Conduct](#code-of-conduct)
-- [Getting Started](#getting-started)
-- [Development Workflow](#development-workflow)
-- [Code Style](#code-style)
-- [Pull Request Process](#pull-request-process)
-- [Reporting Issues](#reporting-issues)
+While direct contributions are not being accepted at this time, you are welcome to fork the repository for your own use. If you have suggestions or find any issues, please feel free to open a GitHub Issue.
 
-## Code of Conduct
-This project adheres to the [Contributor Covenant](https://www.contributor-covenant.org/). By participating, you are expected to uphold this code.
+## Development Standards
 
-## Getting Started
+For those interested in similar automation frameworks, here are the standards followed in this project:
 
-### Prerequisites
-- Java 21+
-- Apache Maven 3.8+
-- Git
-- Docker Desktop (for grid execution)
-- IDE (IntelliJ IDEA or Eclipse)
+### Code Quality
+- **Java Standards**: Follows Google Java Style Guide
+- **Documentation**: Comprehensive JavaDoc for all public methods
+- **Test Coverage**: Minimum 80% test coverage requirement
+- **Code Reviews**: All changes undergo thorough review
 
-### Setting Up
-1. Fork the repository
-2. Clone your fork:
-   ```bash
-   git clone https://github.com/your-username/flight-booking-automation.git
-   cd flight-booking-automation
-   ```
-3. Set up the upstream remote:
-   ```bash
-   git remote add upstream https://github.com/original-owner/flight-booking-automation.git
-   ```
-4. Install dependencies:
-   ```bash
-   mvn clean install -DskipTests
-   ```
+### Testing Standards
+- **Test Naming**: Descriptive, behavior-driven test names
+- **Test Isolation**: Each test is independent and can run in any order
+- **Data Management**: External test data with clear separation of concerns
+- **Reporting**: Detailed reporting with screenshots on failure
 
-## Development Workflow
+### Automation Best Practices
+- **Page Objects**: Clean separation between test logic and page elements
+- **Wait Strategies**: Explicit waits with configurable timeouts
+- **Error Handling**: Comprehensive exception handling and logging
+- **Retry Logic**: Configurable retry mechanisms for flaky tests
 
-### Branch Naming
-```
-type/ticket-number-short-description
-```
+## Forking Guidelines
 
-**Types**:
-- `feature/` - New features
-- `bugfix/` - Bug fixes
-- `hotfix/` - Critical production fixes
-- `docs/` - Documentation changes
+If you fork this repository:
 
-### Commit Messages
-Follow [Conventional Commits](https://www.conventionalcommits.org/):
-```
-<type>[optional scope]: <description>
+1. **Maintain Standards**: Keep the same code quality and testing standards
+2. **Update Documentation**: Modify documentation to reflect your changes
+3. **Add Tests**: Ensure new features are covered by automated tests
+4. **Performance**: Optimize for both execution speed and reliability
 
-[optional body]
+## Contact
 
-[optional footer]
-```
-
-## Code Style
-- Follow [Google Java Style Guide](https://google.github.io/styleguide/javaguide.html)
-- Use 4 spaces for indentation
-- Maximum line length: 120 characters
-- Document all public methods with Javadoc
-- Write unit tests for new code
-- **Project-specific standards**:
-  - Use Page Object Model (POM) for UI interactions
-  - Implement data-driven testing with JSON or CSV data providers
-  - Ensure tests support parallel execution
-  - Use ExtentReports for test reporting
-  - Log important actions with Log4j2
-  - Follow Arrange-Act-Assert pattern in tests
-
-## Pull Request Process
-1. Create a feature branch from `develop`
-2. Ensure all tests pass
-3. Update documentation as needed
-4. Submit a pull request to `develop`
-5. Request review from at least one maintainer
-
-## Reporting Issues
-When creating an issue, please include:
-- Steps to reproduce
-- Expected vs actual behavior
-- Environment details
-- Screenshots if applicable
-- Any relevant logs
+For questions or suggestions, please open a GitHub Issue with detailed information.
 
 ## License
-By contributing, you agree that your contributions will be licensed under the project's [MIT License](LICENSE).
+
+This project is licensed under the MIT License - see the [LICENSE](../LICENSE) file for details.
