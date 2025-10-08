@@ -180,9 +180,14 @@ pipeline {
             }
         }
         unstable {
-            echo "⚠️ Build UNSTABLE. Tests failed. Check the 'Test Dashboard' for detailed results."
             script {
+                echo "⚠️ Build UNSTABLE. Tests failed. Check the 'Test Dashboard' for detailed results."
                 echo "⏱️ Build duration: ${currentBuild.durationString}"
+                
+                // Fail the build for protected branches when tests are unstable
+                if (env.BRANCH_NAME in branchConfig.productionCandidateBranches) {
+                    error("❌ Failing build due to test failures in protected branch '${env.BRANCH_NAME}'. Test failures in protected branches are not allowed.")
+                }
             }
         }
         failure {
