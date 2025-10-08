@@ -39,20 +39,49 @@
   - Pages: Page-specific classes
 
 ### 3. Test Data Management
-- **Location**: `src/test/java/com/demo/flightbooking/data/`
-- **Pattern**: Factory and Builder patterns
+- **Location**: `src/test/java/com/demo/flightbooking/utils/`
+- **Components**:
+  - CsvDataProvider: CSV file parsing and data provision
+  - JsonDataProvider: JSON file parsing and data provision
+- **Test Data Location**: `src/test/resources/testdata/`
+- **Supported Formats**:
+  - JSON files for structured test data
+  - CSV files for tabular test data
 - **Features**:
-  - Test data generation
-  - Data-driven testing support
-  - Environment-specific data
+  - TestNG data provider integration
+  - Environment-specific data support
+  - Programmatic data generation capabilities
 
-### 4. Test Execution
+### 4. Test Execution & Lifecycle
 - **Framework**: TestNG
+- **Location**: `src/test/java/com/demo/flightbooking/tests/`
 - **Features**:
-  - Parallel test execution
-  - Test grouping
-  - Data providers
-  - Listeners for test lifecycle
+  - Parallel test execution across browsers
+  - Test grouping and categorization
+  - Data providers for data-driven testing
+  - Custom listeners for test lifecycle management
+  - Retry mechanisms with configurable retry counts
+
+### 5. Test Listeners & Reporting
+- **Location**: `src/test/java/com/demo/flightbooking/listeners/`
+- **Components**:
+  - TestListener: Custom TestNG listener for enhanced reporting
+  - TestReporter: Custom reporting integration
+  - RetryAnalyzer: Configurable test retry logic
+- **Features**:
+  - Screenshot capture on failure
+  - Custom reporting hooks
+  - Test execution tracking
+
+### 6. Utilities & Helpers
+- **Location**: `src/main/java/com/demo/flightbooking/utils/`
+- **Components**:
+  - ConfigReader: Configuration file parsing and management
+  - DriverManager: WebDriver lifecycle and thread-safe management
+  - ExtentManager: ExtentReports integration and management
+  - MaskingUtil: Data masking utilities for sensitive information
+  - ScreenshotUtils: Screenshot capture and management
+  - WebDriverUtils: WebDriver helper methods and utilities
 
 ## Design Patterns
 
