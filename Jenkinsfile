@@ -78,7 +78,7 @@ pipeline {
             agent {
                 docker {
                     image 'flight-booking-agent-prewarmed:latest'
-                    args '-u root -v /var/run/docker.sock:/var/run/docker.sock --entrypoint="" --network=${env.NETWORK_NAME}'
+                    args "-u root -v /var/run/docker.sock:/var/run/docker.sock --entrypoint=\"\" --network=${env.NETWORK_NAME}"
                 }
             }
             steps {
