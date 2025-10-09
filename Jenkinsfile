@@ -46,7 +46,7 @@ pipeline {
             steps {
                 retry(2) {
                     // Create the Docker network explicitly before starting containers
-                    sh "docker network create selenium-network-${env.BUILD_NUMBER} || true"
+                    sh 'docker network create selenium_grid_network || true'
                     initializeTestEnvironment(env.SUITE_TO_RUN)
                 }
             }
@@ -76,7 +76,7 @@ pipeline {
             agent {
                 docker {
                     image 'flight-booking-agent-prewarmed:latest'
-                    args '-u root -v /var/run/docker.sock:/var/run/docker.sock --entrypoint="" --network=selenium-network-${env.BUILD_NUMBER}'
+                    args '-u root -v /var/run/docker.sock:/var/run/docker.sock --entrypoint="" --network=selenium_grid_network'
                 }
             }
             steps {
