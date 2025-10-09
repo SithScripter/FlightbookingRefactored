@@ -3,9 +3,11 @@
 def branchConfig = getBranchConfig()  // ✅ Load centralized config
 
 pipeline {
-    // ✅ We define no top-level agent. This enables a flexible multi-agent
-    // strategy where each stage can use its own specialized environment.
     agent none 
+
+    environment {
+        NETWORK_NAME = "selenium-grid-${env.BRANCH_NAME}".replaceAll('[^a-zA-Z0-9_.-]', '_')
+    }
 
     options {
         // ✅ Prevents Jenkins from doing an initial checkout on the controller.
@@ -46,8 +48,8 @@ pipeline {
             steps {
                 retry(2) {
                     // Create the Docker network explicitly before starting containers
-                    sh 'docker network create selenium_grid_network || true'
-                    initializeTestEnvironment(env.SUITE_TO_RUN)
+                    sh "docker network create ${env.NETWORK_NAME} || true"
+                    initializeTestEnvironment(env.SUITE_TO_RUN, env.NETWORK_NAME)
                 }
             }
         }
@@ -76,7 +78,7 @@ pipeline {
             agent {
                 docker {
                     image 'flight-booking-agent-prewarmed:latest'
-                    args '-u root -v /var/run/docker.sock:/var/run/docker.sock --entrypoint="" --network=selenium_grid_network'
+                    args '-u root -v /var/run/docker.sock:/var/run/docker.sock --entrypoint="" --network=${env.NETWORK_NAME}'
                 }
             }
             steps {

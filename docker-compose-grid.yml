@@ -48,5 +48,5 @@ services:
 
 networks:
   grid:
-    name: selenium_grid_network
+    name: ${NETWORK_NAME:-selenium_grid_network}
     external: true
