@@ -58,26 +58,25 @@ public class PurchaseFormValidationTest extends BaseTest {
         Assert.assertTrue(urlContainsPurchase, "Did not navigate to purchase page!");
 
         // Create invalid passenger data using DataFaker
-        Passenger invalidPassenger = new Passenger(
+        PurchasePage purchasePage = new PurchasePage(driver);
+        purchasePage.fillPurchaseForm(new Passenger(
             "Paris",
             "Rome",
             FAKER.name().firstName() + "!@#", // invalid name with special chars
             FAKER.name().lastName(),
             FAKER.address().streetAddress(),
-            FAKER.address().city(),
+            FAKER.address().city(),  // city
             FAKER.address().state(),
-            "invalidzip123", // invalid zip
+            "",  // empty zipCode
             "Visa",
-            "invalidcardnumber", // invalid card
-            "12",
-            "2025",
+            "",  // empty cardNumber
+            "13",  // invalid month
+            "2010",  // expired year
             FAKER.name().fullName() + "!@#", // invalid card name
             30,
             "Male"
-        );
+        ));
 
-        PurchasePage purchasePage = new PurchasePage(driver);
-        purchasePage.fillPurchaseForm(invalidPassenger);
         purchasePage.clickPurchaseFlightButton();
 
         // Assert that purchase failed: should remain on purchase page or show error

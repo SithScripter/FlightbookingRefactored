@@ -68,7 +68,7 @@ pipeline {
             }
         }
         // Force multi branch pipeline to auto trigger
-        
+
         stage('Build & Run Parallel Tests') {
             when {
                 expression { return env.BRANCH_NAME in branchConfig.pipelineBranches }
