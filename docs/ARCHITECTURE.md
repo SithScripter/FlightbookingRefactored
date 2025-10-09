@@ -47,10 +47,11 @@
 - **Supported Formats**:
   - JSON files for structured test data
   - CSV files for tabular test data
+  - DataFaker library for dynamic, seeded test data generation
 - **Features**:
   - TestNG data provider integration
   - Environment-specific data support
-  - Programmatic data generation capabilities
+  - Deterministic randomization with fixed seeds for reproducible negative tests
 
 ### 4. Test Execution & Lifecycle
 - **Framework**: TestNG

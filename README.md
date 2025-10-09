@@ -71,7 +71,7 @@ Edit `src/test/resources/config/config.properties` to configure:
 The framework supports multiple test data formats:
 - **JSON**: Structured test data in `src/test/resources/testdata/` directory
 - **CSV**: Tabular test data for data-driven scenarios
-- **Programmatic**: Dynamic test data generation using Builder and Factory patterns
+- **DataFaker**: Dynamic, seeded test data generation for realistic and reproducible negative testing
 
 ### Test Suites
 

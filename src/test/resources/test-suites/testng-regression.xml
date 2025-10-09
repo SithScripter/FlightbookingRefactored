@@ -12,6 +12,7 @@
         <parameter name="browser" value="${browser}"/>
         <classes>
             <class name="com.demo.flightbooking.tests.booking.EndToEndBookingTest"/>
+            <class name="com.demo.flightbooking.tests.booking.PurchaseFormValidationTest"/>
         </classes>
     </test>
 </suite>

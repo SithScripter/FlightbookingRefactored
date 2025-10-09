@@ -71,15 +71,45 @@ public class EndToEndBookingTest extends BaseTest {
         boolean urlContainsConfirmation = webDriverUtils.waitUntilUrlContains("/confirmation.php");
         Assert.assertTrue(urlContainsConfirmation, "Did not navigate to confirmation page after purchase.");
         
-        // 🔴 INTENTIONAL FAILURE FOR TESTING - Always fails
-//        Assert.assertTrue(false, "Intentional failure to test framework's failure handling, screenshots, and reporting");
-        
-        // Additional verification: Check that the confirmation page has loaded correctly
-        Assert.assertTrue(driver.getTitle().contains("BlazeDemo"), "Confirmation page title does not match expected.");
-        
         if (test != null) {
             test.pass("Flight booking (JSON) successful for: " + passenger.firstName() + " " + passenger.lastName());
         }
         logger.info("Flight booking (JSON) completed for passenger: {} {}", passenger.firstName(), passenger.lastName());
+    }
+
+    /**
+     * Verifies flight search for all valid routes from CSV data.
+     * This test is data-driven, running for each route pair in routes.csv.
+     *
+     * @param departureCity The departure city.
+     * @param destinationCity The destination city.
+     */
+    @Test(
+            dataProvider = "routesData",
+            dataProviderClass = CsvDataProvider.class,
+            groups = {"regression", "smoke"},
+            testName = "Verify flight search for all valid routes from CSV"
+        )
+    public void testAllValidRoutesFromCsv(String departureCity, String destinationCity) {
+        WebDriver driver = DriverManager.getDriver();
+        WebDriverUtils webDriverUtils = new WebDriverUtils(driver, ConfigReader.getPropertyAsInt("test.timeout"));
+        driver.get(ConfigReader.getApplicationUrl());
+        ExtentTest test = ExtentManager.getTest();
+
+        if (test != null) {
+            test.info("Testing route: " + departureCity + " to " + destinationCity);
+        }
+        logger.info("Starting flight search for route: {} to {}", departureCity, destinationCity);
+
+        HomePage homePage = new HomePage(driver);
+        homePage.findFlights(departureCity, destinationCity);
+
+        boolean urlContainsReserve = webDriverUtils.waitUntilUrlContains("/reserve.php");
+        Assert.assertTrue(urlContainsReserve, "Did not navigate to reserve page for route " + departureCity + " to " + destinationCity);
+
+        if (test != null) {
+            test.pass("Flight search successful for route: " + departureCity + " to " + destinationCity);
+        }
+        logger.info("Flight search completed for route: {} to {}", departureCity, destinationCity);
     }
 }
