@@ -46,7 +46,7 @@ pipeline {
             steps {
                 retry(2) {
                     // Create the Docker network explicitly before starting containers
-                    sh 'docker network create selenium-network-${env.BUILD_NUMBER} || true'
+                    sh "docker network create selenium-network-${env.BUILD_NUMBER} || true"
                     initializeTestEnvironment(env.SUITE_TO_RUN)
                 }
             }
