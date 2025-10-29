@@ -39,12 +39,7 @@ pipeline {
             when {
                 expression { return env.BRANCH_NAME in branchConfig.pipelineBranches }
             }
-            agent {
-                docker {
-                    image 'flight-booking-agent-prewarmed:latest'
-                    args "-v /var/run/docker.sock:/var/run/docker.sock"
-                }
-            }
+            agent any
             steps {
                 retry(2) {
                     // Create the Docker network explicitly before starting containers
@@ -109,69 +104,66 @@ pipeline {
     post {
         always {
             script {
-                // Re-introduce the functional 'inside' wrapper
-                docker.image('flight-booking-agent-prewarmed:latest').inside('-u root -v /var/run/docker.sock:/var/run/docker.sock --entrypoint=""') {
-                    echo "--- Starting Guaranteed Post-Build Processing ---"
+                echo "--- Starting Guaranteed Post-Build Processing ---"
 
+                try {
+                    unstash 'build-artifacts'
+                } catch (e) {
+                    echo "⚠️ Build artifacts not found to unstash. This is expected if the build failed before stashing."
+                }
+
+                // 1. Publish Test Results (sets the final build status)
+                junit testResults: '**/surefire-reports/**/*.xml', allowEmptyResults: true
+
+                // 2. Generate and Publish HTML Reports (from shared library)
+                generateDashboard(env.SUITE_TO_RUN, "${env.BUILD_NUMBER}")
+                archiveAndPublishReports()
+
+                // 3. Handle Notifications (Qase, Email)
+                if (env.BRANCH_NAME in branchConfig.productionCandidateBranches) {
+                    echo "🚀 Running notifications for production-candidate branch..."
                     try {
-                        unstash 'build-artifacts'
-                    } catch (e) {
-                        echo "⚠️ Build artifacts not found to unstash. This is expected if the build failed before stashing."
-                    }
-
-                    // 1. Publish Test Results (sets the final build status)
-                    junit testResults: '**/surefire-reports/**/*.xml', allowEmptyResults: true
-
-                    // 2. Generate and Publish HTML Reports (from shared library)
-                    generateDashboard(env.SUITE_TO_RUN, "${env.BUILD_NUMBER}")
-                    archiveAndPublishReports()
-
-                    // 3. Handle Notifications (Qase, Email)
-                    if (env.BRANCH_NAME in branchConfig.productionCandidateBranches) {
-                        echo "🚀 Running notifications for production-candidate branch..."
-                        try {
-                            def qaseConfig = readJSON file: 'cicd/qase_config.json'
-                            def suiteSettings = qaseConfig[env.SUITE_TO_RUN]
-                            if (suiteSettings) {
-                                def qaseIds = (params.QASE_TEST_CASE_IDS?.trim()) ? params.QASE_TEST_CASE_IDS : suiteSettings.testCaseIds
-                                updateQase(
-                                    projectCode: 'FB',
-                                    credentialsId: 'qase-api-token',
-                                    testCaseIds: qaseIds
-                                )
-                                sendBuildSummaryEmail(
-                                    suiteName: env.SUITE_TO_RUN,
-                                    emailCredsId: 'recipient-email-list'
-                                )
-                            }
-                        } catch (err) {
-                            echo "⚠️ Notification step failed: ${err.getMessage()}"
-                        }
-                    } else {
-                        echo "ℹ️ Skipping notifications for branch: ${env.BRANCH_NAME}"
-                    }
-
-                    // Conditional notifications based on build result
-                    if (currentBuild.result == 'UNSTABLE') {
-                        echo "📧 Notifying QA team for UNSTABLE build on ${env.BRANCH_NAME}"
-                        try {
+                        def qaseConfig = readJSON file: 'cicd/qase_config.json'
+                        def suiteSettings = qaseConfig[env.SUITE_TO_RUN]
+                        if (suiteSettings) {
+                            def qaseIds = (params.QASE_TEST_CASE_IDS?.trim()) ? params.QASE_TEST_CASE_IDS : suiteSettings.testCaseIds
+                            updateQase(
+                                projectCode: 'FB',
+                                credentialsId: 'qase-api-token',
+                                testCaseIds: qaseIds
+                            )
                             sendBuildSummaryEmail(
                                 suiteName: env.SUITE_TO_RUN,
                                 emailCredsId: 'recipient-email-list'
                             )
-                        } catch (err) {
-                            echo "⚠️ Email notification failed: ${err.getMessage()}"
                         }
-                    } else if (currentBuild.result == 'FAILURE') {
-                        echo "📧 Notifying DevOps team for FAILURE build on ${env.BRANCH_NAME}"
-                        try {
-                            sendBuildSummaryEmail(
-                                suiteName: env.SUITE_TO_RUN,
-                                emailCredsId: 'recipient-email-list'
-                            )
-                        } catch (err) {
-                            echo "⚠️ Email notification failed: ${err.getMessage()}"
-                        }
+                    } catch (err) {
+                        echo "⚠️ Notification step failed: ${err.getMessage()}"
+                    }
+                } else {
+                    echo "ℹ️ Skipping notifications for branch: ${env.BRANCH_NAME}"
+                }
+
+                // Conditional notifications based on build result
+                if (currentBuild.result == 'UNSTABLE') {
+                    echo "📧 Notifying QA team for UNSTABLE build on ${env.BRANCH_NAME}"
+                    try {
+                        sendBuildSummaryEmail(
+                            suiteName: env.SUITE_TO_RUN,
+                            emailCredsId: 'recipient-email-list'
+                        )
+                    } catch (err) {
+                        echo "⚠️ Email notification failed: ${err.getMessage()}"
+                    }
+                } else if (currentBuild.result == 'FAILURE') {
+                    echo "📧 Notifying DevOps team for FAILURE build on ${env.BRANCH_NAME}"
+                    try {
+                        sendBuildSummaryEmail(
+                            suiteName: env.SUITE_TO_RUN,
+                            emailCredsId: 'recipient-email-list'
+                        )
+                    } catch (err) {
+                        echo "⚠️ Email notification failed: ${err.getMessage()}"
                     }
                 }
             }
@@ -201,13 +193,8 @@ pipeline {
         }
         cleanup {
             script {
-                // Re-introduce the functional 'inside' wrapper
-                docker.image('flight-booking-agent-prewarmed:latest').inside('-u root -v /var/run/docker.sock:/var/run/docker.sock --entrypoint=""') {
-                    if (env.BRANCH_NAME in branchConfig.pipelineBranches) {
-                        echo '🧹 GUARANTEED CLEANUP: Shutting down Selenium Grid...'
-                        stopDockerGrid('docker-compose-grid.yml')
-                    }
-                }
+                echo '🧹 GUARANTEED CLEANUP: Shutting down Selenium Grid...'
+                stopDockerGrid('docker-compose-grid.yml')
             }
         }
     }
