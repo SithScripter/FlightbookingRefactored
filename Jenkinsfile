@@ -42,7 +42,7 @@ pipeline {
             agent {
                 docker {
                     image 'flight-booking-agent-prewarmed:latest'
-                    args '-u root -v /var/run/docker.sock:/var/run/docker.sock --entrypoint=""'
+                    args "-v /var/run/docker.sock:/var/run/docker.sock"
                 }
             }
             steps {
@@ -79,7 +79,7 @@ pipeline {
             agent {
                 docker {
                     image 'flight-booking-agent-prewarmed:latest'
-                    args "-u root -v /var/run/docker.sock:/var/run/docker.sock --entrypoint=\"\" --network=${env.NETWORK_NAME}"
+                    args "-v /var/run/docker.sock:/var/run/docker.sock --network=${env.NETWORK_NAME}"
                 }
             }
             steps {
