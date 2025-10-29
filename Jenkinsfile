@@ -90,10 +90,10 @@ pipeline {
                             def mvnBase = "mvn -P force-local-cache clean test -P ${env.SUITE_TO_RUN} -Denv=${params.TARGET_ENVIRONMENT} -Dtest.suite=${env.SUITE_TO_RUN} -Dbrowser.headless=true"
                             parallel(
                                 Chrome: {
-                                    sh script: "${mvnBase} -Dbrowser=chrome -Dreport.dir=chrome", returnStatus: true
+                                    sh script: "${mvnBase} -Dbrowser=chrome -Dreport.dir=chrome -Dproject.build.directory=target-chrome", returnStatus: true
                                 },
                                 Firefox: {
-                                    sh script: "${mvnBase} -Dbrowser=firefox -Dreport.dir=firefox", returnStatus: true
+                                    sh script: "${mvnBase} -Dbrowser=firefox -Dreport.dir=firefox -Dproject.build.directory=target-firefox", returnStatus: true
                                 }
                             )
                         }
@@ -101,7 +101,7 @@ pipeline {
                 }
                 // Stash all artifacts needed for post-processing
                 echo "Stashing build artifacts (reports, screenshots, test results)..."
-                stash name: 'build-artifacts', includes: 'reports/**, target/surefire-reports/**', allowEmpty: true
+                stash name: 'build-artifacts', includes: 'reports/**, **/surefire-reports/**, **/regression-failure-summary.txt', allowEmpty: true
             }
         }
     }
@@ -120,7 +120,7 @@ pipeline {
                     }
 
                     // 1. Publish Test Results (sets the final build status)
-                    junit testResults: 'target/surefire-reports/**/*.xml', allowEmptyResults: true
+                    junit testResults: '**/surefire-reports/**/*.xml', allowEmptyResults: true
 
                     // 2. Generate and Publish HTML Reports (from shared library)
                     generateDashboard(env.SUITE_TO_RUN, "${env.BUILD_NUMBER}")
