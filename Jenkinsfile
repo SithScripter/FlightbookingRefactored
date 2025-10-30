@@ -121,16 +121,14 @@ pipeline {
                             def mvnBase = "mvn -P force-local-cache clean test -P ${env.SUITE_TO_RUN} -Denv=${params.TARGET_ENVIRONMENT} -Dtest.suite=${env.SUITE_TO_RUN} -Dbrowser.headless=true"
                             parallel(
                                 Chrome: {
-                                    // ✅ --- SYNTAX FIX: Replaced agent/steps with docker.image().inside() ---
+                                    unstash 'code'
                                     docker.image('flight-booking-agent-prewarmed:latest').inside("-v /var/run/docker.sock:/var/run/docker.sock --network=${env.NETWORK_NAME}") {
-                                        unstash 'code'
                                         sh script: "${mvnBase} -Dbrowser=chrome -Dreport.dir=chrome -Dproject.build.directory=target-chrome", returnStatus: true
                                     }
                                 },
                                 Firefox: {
-                                    // ✅ --- SYNTAX FIX: Replaced agent/steps with docker.image().inside() ---
+                                    unstash 'code'
                                     docker.image('flight-booking-agent-prewarmed:latest').inside("-v /var/run/docker.sock:/var/run/docker.sock --network=${env.NETWORK_NAME}") {
-                                        unstash 'code'
                                         sh script: "${mvnBase} -Dbrowser=firefox -Dreport.dir=firefox -Dproject.build.directory=target-firefox", returnStatus: true
                                     }
                                 }
@@ -143,7 +141,12 @@ pipeline {
 
         // ✅ ADD THIS NEW STAGE
         stage('Stash Artifacts') {
-    }
+            agent any
+            steps {
+                echo "Stashing build artifacts (reports, screenshots, test results)..."
+                stash name: 'build-artifacts', includes: 'reports/**, **/surefire-reports/**, **/regression-failure-summary.txt', allowEmpty: true
+            }
+        }
 
     post {
         always {
