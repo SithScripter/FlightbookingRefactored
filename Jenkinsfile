@@ -173,12 +173,15 @@ pipeline {
                 }
             }
         }
-{{ ... }}
+        
+        // ✅ CORRECTED SYNTAX: 'success' block was missing
+        success {
             echo "✅ Build SUCCESS. All tests passed."
             script {
                 echo "⏱️ Build duration: ${currentBuild.durationString}"
             }
         }
+        
         unstable {
             script {
                 echo "⚠️ Build UNSTABLE. Tests failed. Check the 'Test Dashboard' for detailed results."
