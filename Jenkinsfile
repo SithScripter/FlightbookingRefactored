@@ -83,27 +83,17 @@ pipeline {
                             def mvnBase = "mvn -P force-local-cache clean test -P ${env.SUITE_TO_RUN} -Denv=${params.TARGET_ENVIRONMENT} -Dtest.suite=${env.SUITE_TO_RUN} -Dbrowser.headless=true"
                             parallel(
                                 Chrome: {
-                                    agent {
-                                        docker {
-                                            image 'flight-booking-agent-prewarmed:latest'
-                                            args "-v /var/run/docker.sock:/var/run/docker.sock --network=${env.NETWORK_NAME}"
+                                    node {
+                                        docker.image('flight-booking-agent-prewarmed:latest').inside('-v /var/run/docker.sock:/var/run/docker.sock --network=${env.NETWORK_NAME}') {
+                                            sh script: "${mvnBase} -Dbrowser=chrome -Dreport.dir=chrome -Dproject.build.directory=target-chrome", returnStatus: true
                                         }
-                                    }
-                                    steps {
-                                        // ✅ --- LOGIC FIX: Added back target isolation ---
-                                        sh script: "${mvnBase} -Dbrowser=chrome -Dreport.dir=chrome -Dproject.build.directory=target-chrome", returnStatus: true
                                     }
                                 },
                                 Firefox: {
-                                    agent {
-                                        docker {
-                                            image 'flight-booking-agent-prewarmed:latest'
-                                            args "-v /var/run/docker.sock:/var/run/docker.sock --network=${env.NETWORK_NAME}"
+                                    node {
+                                        docker.image('flight-booking-agent-prewarmed:latest').inside('-v /var/run/docker.sock:/var/run/docker.sock --network=${env.NETWORK_NAME}') {
+                                            sh script: "${mvnBase} -Dbrowser=firefox -Dreport.dir=firefox -Dproject.build.directory=target-firefox", returnStatus: true
                                         }
-                                    }
-                                    steps {
-                                        // ✅ --- LOGIC FIX: Added back target isolation ---
-                                        sh script: "${mvnBase} -Dbrowser=firefox -Dreport.dir=firefox -Dproject.build.directory=target-firefox", returnStatus: true
                                     }
                                 }
                             )
