@@ -68,18 +68,13 @@ pipeline {
                     input message: "🛑 Proceed with full regression for branch '${env.BRANCH_NAME}'?"
                 }
             }
-        }
+        } // ✅ --- SYNTAX FIX: ADDED MISSING BRACE ---
 
         stage('Build & Run Parallel Tests') {
             when {
                 expression { return env.BRANCH_NAME in branchConfig.pipelineBranches }
             }
-            agent {
-                docker {
-                    image 'flight-booking-agent-prewarmed:latest'
-                    args "-v /var/run/docker.sock:/var/run/docker.sock --network=${env.NETWORK_NAME}"
-                }
-            }
+            agent none
             steps {
                 echo "🧪 Running parallel tests for: ${env.SUITE_TO_RUN}"
                 retry(2) {
@@ -88,17 +83,38 @@ pipeline {
                             def mvnBase = "mvn -P force-local-cache clean test -P ${env.SUITE_TO_RUN} -Denv=${params.TARGET_ENVIRONMENT} -Dtest.suite=${env.SUITE_TO_RUN} -Dbrowser.headless=true"
                             parallel(
                                 Chrome: {
-                                    sh script: "${mvnBase} -Dbrowser=chrome -Dreport.dir=chrome -Dproject.build.directory=target-chrome", returnStatus: true
+                                    agent {
+                                        docker {
+                                            image 'flight-booking-agent-prewarmed:latest'
+                                            args "-v /var/run/docker.sock:/var/run/docker.sock --network=${env.NETWORK_NAME}"
+                                        }
+                                    }
+                                    steps {
+                                        // ✅ --- LOGIC FIX: Added back target isolation ---
+                                        sh script: "${mvnBase} -Dbrowser=chrome -Dreport.dir=chrome -Dproject.build.directory=target-chrome", returnStatus: true
+                                    }
                                 },
                                 Firefox: {
-                                    sh script: "${mvnBase} -Dbrowser=firefox -Dreport.dir=firefox -Dproject.build.directory=target-firefox", returnStatus: true
+                                    agent {
+                                        docker {
+                                            image 'flight-booking-agent-prewarmed:latest'
+                                            args "-v /var/run/docker.sock:/var/run/docker.sock --network=${env.NETWORK_NAME}"
+                                        }
+                                    }
+                                    steps {
+                                        // ✅ --- LOGIC FIX: Added back target isolation ---
+                                        sh script: "${mvnBase} -Dbrowser=firefox -Dreport.dir=firefox -Dproject.build.directory=target-firefox", returnStatus: true
+                                    }
                                 }
                             )
                         }
                     }
                 }
                 // Stash all artifacts needed for post-processing
-                stash name: 'build-artifacts', includes: 'reports/**, **/surefire-reports/**, **/regression-failure-summary.txt', allowEmpty: true
+                node {
+                    echo "Stashing build artifacts (reports, screenshots, test results)..."
+                    stash name: 'build-artifacts', includes: 'reports/**, **/surefire-reports/**, **/regression-failure-summary.txt', allowEmpty: true
+                }
             }
         }
     }
@@ -108,13 +124,18 @@ pipeline {
             script {
                 // ✅ Use the wrapper with fixed args
                 docker.image('flight-booking-agent-prewarmed:latest').inside('-v /var/run/docker.sock:/var/run/docker.sock') {
-                    echo "--- Starting Guaranteed Post-Build Processing ---"
+                    
+                    echo "--- Starting Guaranteed Post-Build Processing ---" // ✅ Moved echo to top
 
                     try {
                         unstash 'build-artifacts'
                     } catch (e) {
                         echo "⚠️ Build artifacts not found to unstash. This is expected if the build failed before stashing."
                     }
+
+                    // Copy report files to expected index.html names
+                    sh 'cp reports/chrome/smoke-chrome-report.html reports/chrome/index.html || echo "Chrome report not found"'
+                    sh 'cp reports/firefox/smoke-firefox-report.html reports/firefox/index.html || echo "Firefox report not found"'
 
                     // 1. Publish Test Results (sets the final build status)
                     junit testResults: '**/surefire-reports/**/*.xml', allowEmptyResults: true
