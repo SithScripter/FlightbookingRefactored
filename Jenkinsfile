@@ -39,7 +39,12 @@ pipeline {
             when {
                 expression { return env.BRANCH_NAME in branchConfig.pipelineBranches }
             }
-            agent any
+            agent {
+                docker {
+                    image 'flight-booking-agent-prewarmed:latest'
+                    args "-v /var/run/docker.sock:/var/run/docker.sock"
+                }
+            }
             steps {
                 retry(2) {
                     // Create the Docker network explicitly before starting containers
@@ -64,8 +69,6 @@ pipeline {
                 }
             }
         }
-        // Force multi branch pipeline to auto trigger
-        // Force multi branch pipeline to auto trigger
 
         stage('Build & Run Parallel Tests') {
             when {
@@ -95,7 +98,6 @@ pipeline {
                     }
                 }
                 // Stash all artifacts needed for post-processing
-                echo "Stashing build artifacts (reports, screenshots, test results)..."
                 stash name: 'build-artifacts', includes: 'reports/**, **/surefire-reports/**, **/regression-failure-summary.txt', allowEmpty: true
             }
         }
@@ -103,8 +105,9 @@ pipeline {
 
     post {
         always {
-            node {
-                script {
+            script {
+                // ✅ Use the wrapper with fixed args
+                docker.image('flight-booking-agent-prewarmed:latest').inside('-v /var/run/docker.sock:/var/run/docker.sock') {
                     echo "--- Starting Guaranteed Post-Build Processing ---"
 
                     try {
@@ -170,7 +173,7 @@ pipeline {
                 }
             }
         }
-        success {
+{{ ... }}
             echo "✅ Build SUCCESS. All tests passed."
             script {
                 echo "⏱️ Build duration: ${currentBuild.durationString}"
@@ -194,8 +197,9 @@ pipeline {
             }
         }
         cleanup {
-            node {
-                script {
+            script {
+                // ✅ Use the wrapper with fixed args
+                docker.image('flight-booking-agent-prewarmed:latest').inside('-v /var/run/docker.sock:/var/run/docker.sock') {
                     echo '🧹 GUARANTEED CLEANUP: Shutting down Selenium Grid...'
                     stopDockerGrid('docker-compose-grid.yml')
                 }
