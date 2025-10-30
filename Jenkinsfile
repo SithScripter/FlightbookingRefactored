@@ -110,11 +110,15 @@ pipeline {
                         }
                     }
                 }
-                // Stash all artifacts needed for post-processing
-                node {
-                    echo "Stashing build artifacts (reports, screenshots, test results)..."
-                    stash name: 'build-artifacts', includes: 'reports/**, **/surefire-reports/**, **/regression-failure-summary.txt', allowEmpty: true
-                }
+            }
+        }
+
+        // ✅ ADD THIS NEW STAGE
+        stage('Stash Artifacts') {
+            agent any
+            steps {
+                echo "Stashing build artifacts (reports, screenshots, test results)..."
+                stash name: 'build-artifacts', includes: 'reports/**, **/surefire-reports/**, **/regression-failure-summary.txt', allowEmpty: true
             }
         }
     }
