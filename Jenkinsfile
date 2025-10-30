@@ -101,14 +101,48 @@ pipeline {
             }
         }
 
-        // ✅ ADD THIS NEW STAGE
-        stage('Stash Artifacts') {
+        // ✅ NEW STAGE: Stash the checked-out code for parallel branches
+        stage('Stash Code') {
             agent any
             steps {
-                echo "Stashing build artifacts (reports, screenshots, test results)..."
-                stash name: 'build-artifacts', includes: 'reports/**, **/surefire-reports/**, **/regression-failure-summary.txt', allowEmpty: true
+                echo "Stashing project code for parallel test execution..."
+                stash name: 'code', includes: '**/*', excludes: '.git/**, target/**, reports/**, docker-compose.yml, docker-compose-grid.yml'
             }
         }
+
+        // ✅ CORRECTED: Parallel branches now unstash code
+        stage('Build & Run Parallel Tests') {
+            agent none
+            steps {
+                echo "🧪 Running parallel tests for: ${env.SUITE_TO_RUN}"
+                retry(2) {
+                    timeout(time: 2, unit: 'HOURS') {
+                        script {
+                            def mvnBase = "mvn -P force-local-cache clean test -P ${env.SUITE_TO_RUN} -Denv=${params.TARGET_ENVIRONMENT} -Dtest.suite=${env.SUITE_TO_RUN} -Dbrowser.headless=true"
+                            parallel(
+                                Chrome: {
+                                    // ✅ --- SYNTAX FIX: Replaced agent/steps with docker.image().inside() ---
+                                    docker.image('flight-booking-agent-prewarmed:latest').inside("-v /var/run/docker.sock:/var/run/docker.sock --network=${env.NETWORK_NAME}") {
+                                        unstash 'code'
+                                        sh script: "${mvnBase} -Dbrowser=chrome -Dreport.dir=chrome -Dproject.build.directory=target-chrome", returnStatus: true
+                                    }
+                                },
+                                Firefox: {
+                                    // ✅ --- SYNTAX FIX: Replaced agent/steps with docker.image().inside() ---
+                                    docker.image('flight-booking-agent-prewarmed:latest').inside("-v /var/run/docker.sock:/var/run/docker.sock --network=${env.NETWORK_NAME}") {
+                                        unstash 'code'
+                                        sh script: "${mvnBase} -Dbrowser=firefox -Dreport.dir=firefox -Dproject.build.directory=target-firefox", returnStatus: true
+                                    }
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        // ✅ ADD THIS NEW STAGE
+        stage('Stash Artifacts') {
     }
 
     post {
