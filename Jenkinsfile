@@ -52,11 +52,13 @@ pipeline {
                     sh "docker network create ${env.NETWORK_NAME} || true"
                     echo "🚀 Starting Docker Grid..."
 
-                    // ✅ --- LIBRARY FIX: Pass correct Hub URL and Network Name ---
+                    // ✅ --- BUILD 21 FIX: Switched to positional arguments ---
                     startDockerGrid(
-                        composeFile: 'docker-compose-grid.yml',
-                        hubUrl: 'http://selenium-hub:4444/wd/hub',
-                        networkName: env.NETWORK_NAME
+                        'docker-compose-grid.yml',         // 1. composeFile
+                        120,                               // 2. maxWaitSeconds (default)
+                        5,                                 // 3. checkIntervalSeconds (default)
+                        'http://selenium-hub:4444/wd/hub', // 4. hubUrl (our override)
+                        env.NETWORK_NAME                   // 5. networkName (our override)
                     )
                 }
             }
