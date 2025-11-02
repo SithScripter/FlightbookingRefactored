@@ -42,17 +42,22 @@ pipeline {
             agent {
                 docker {
                     image 'flight-booking-agent-prewarmed:latest'
-                    // ✅ --- HANG FIX: Removed --entrypoint from Initialize to allow grid startup ---
-                    args "-v /var/run/docker.sock:/var/run/docker.sock"
+                    // ✅ --- HANG FIX: Added --entrypoint="" ---
+                    args "-v /var/run/docker.sock:/var/run/docker.sock --entrypoint=\"\""
                 }
             }
             steps {
                 retry(2) {
                     // Create the Docker network explicitly before starting containers
                     sh "docker network create ${env.NETWORK_NAME} || true"
-                    // ✅ --- POM FIX: Only start the grid. Code is checked out later. ---
                     echo "🚀 Starting Docker Grid..."
-                    startDockerGrid('docker-compose-grid.yml')
+
+                    // ✅ --- LIBRARY FIX: Pass correct Hub URL and Network Name ---
+                    startDockerGrid(
+                        composeFile: 'docker-compose-grid.yml',
+                        hubUrl: 'http://selenium-hub:4444/wd/hub',
+                        networkName: env.NETWORK_NAME
+                    )
                 }
             }
         }
@@ -115,7 +120,7 @@ pipeline {
                 stash name: 'build-artifacts', includes: 'reports/**, **/surefire-reports/**, **/regression-failure-summary.txt', allowEmpty: true
             }
         }
-    } // ✅ --- BUILD 17/18 SYNTAX FIX: This brace closes 'stages' ---
+    }
 
     post {
         always {
