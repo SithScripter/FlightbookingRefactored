@@ -52,7 +52,7 @@ pipeline {
                     sh "docker network create ${env.NETWORK_NAME} || true"
                     echo "🚀 Starting Docker Grid..."
 
-                    // ✅ --- BUILD 21 FIX: Switched to positional arguments ---
+                    // ✅ --- LIBRARY FIX: Pass correct Hub URL and Network Name ---
                     startDockerGrid(
                         'docker-compose-grid.yml',         // 1. composeFile
                         120,                               // 2. maxWaitSeconds (default)
@@ -93,19 +93,21 @@ pipeline {
                             def mvnBase = "mvn -P force-local-cache clean test -P ${env.SUITE_TO_RUN} -Denv=${params.TARGET_ENVIRONMENT} -Dtest.suite=${env.SUITE_TO_RUN} -Dbrowser.headless=true"
                             parallel(
                                 Chrome: {
-                                    // ✅ --- POM/HANG/SYNTAX FIX ---
                                     docker.image('flight-booking-agent-prewarmed:latest').inside("-v /var/run/docker.sock:/var/run/docker.sock --network=${env.NETWORK_NAME} --entrypoint=\"\"") {
                                         cleanWs()
                                         checkout scm
                                         sh script: "${mvnBase} -Dbrowser=chrome -Dreport.dir=chrome -Dproject.build.directory=target-chrome", returnStatus: true
+                                        // ✅ --- STASH FIX: Stash artifacts from this workspace ---
+                                        stash name: 'chrome-artifacts', includes: 'reports/**, **/surefire-reports/**, **/regression-failure-summary.txt', allowEmpty: true
                                     }
                                 },
                                 Firefox: {
-                                    // ✅ --- POM/HANG/SYNTAX FIX ---
                                     docker.image('flight-booking-agent-prewarmed:latest').inside("-v /var/run/docker.sock:/var/run/docker.sock --network=${env.NETWORK_NAME} --entrypoint=\"\"") {
                                         cleanWs()
                                         checkout scm
                                         sh script: "${mvnBase} -Dbrowser=firefox -Dreport.dir=firefox -Dproject.build.directory=target-firefox", returnStatus: true
+                                        // ✅ --- STASH FIX: Stash artifacts from this workspace ---
+                                        stash name: 'firefox-artifacts', includes: 'reports/**, **/surefire-reports/**, **/regression-failure-summary.txt', allowEmpty: true
                                     }
                                 }
                             )
@@ -115,13 +117,9 @@ pipeline {
             }
         }
 
-        stage('Stash Artifacts') {
-            agent any
-            steps {
-                echo "Stashing build artifacts (reports, screenshots, test results)..."
-                stash name: 'build-artifacts', includes: 'reports/**, **/surefire-reports/**, **/regression-failure-summary.txt', allowEmpty: true
-            }
-        }
+        // ✅ --- STASH FIX: This stage is no longer needed ---
+        // stage('Stash Artifacts') { ... }
+
     }
 
     post {
@@ -132,10 +130,16 @@ pipeline {
 
                     echo "--- Starting Guaranteed Post-Build Processing ---"
 
+                    // ✅ --- STASH FIX: Unstash BOTH sets of artifacts ---
                     try {
-                        unstash 'build-artifacts'
+                        unstash 'chrome-artifacts'
                     } catch (e) {
-                        echo "⚠️ Build artifacts not found to unstash. This is expected if the build failed before stashing."
+                        echo "⚠️ Chrome artifacts not found to unstash."
+                    }
+                    try {
+                        unstash 'firefox-artifacts'
+                    } catch (e) {
+                        echo "⚠️ Firefox artifacts not found to unstash."
                     }
 
                     // Copy report files to expected index.html names
