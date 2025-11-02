@@ -74,9 +74,8 @@ public class BaseTest {
      * ✅ Runs once per <test> tag in testng XML.
      * Creates a unique ExtentSparkReporter per browser/stage.
      */
-    @Parameters("browser")
-    @BeforeClass(alwaysRun = true)
-    public void setUpClass() {
+    @BeforeTest(alwaysRun = true)
+    public void setUpTest() {
         // ✅ Use dynamic logger for consistency
         Logger classLogger = LogManager.getLogger(this.getClass());
         
@@ -185,10 +184,10 @@ public class BaseTest {
 
     /**
      * ✅ Runs once per <test> tag completion.
-     * Flushes report and copies it to index.html for Jenkins if needed.
+     * Flushes report and writes failure summary.
      */
-    @AfterClass(alwaysRun = true)
-    public void tearDownClass() {
+    @AfterTest(alwaysRun = true)
+    public void tearDownTest() {
         // ✅ Use dynamic logger to pick up MDC context
         Logger classLogger = LogManager.getLogger(this.getClass());
         
