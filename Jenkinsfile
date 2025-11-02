@@ -42,14 +42,17 @@ pipeline {
             agent {
                 docker {
                     image 'flight-booking-agent-prewarmed:latest'
-                    args "-v /var/run/docker.sock:/var/run/docker.sock"
+                    // ✅ --- HANG FIX: Added --entrypoint="" ---
+                    args "-v /var/run/docker.sock:/var/run/docker.sock --entrypoint=\"\""
                 }
             }
             steps {
                 retry(2) {
                     // Create the Docker network explicitly before starting containers
                     sh "docker network create ${env.NETWORK_NAME} || true"
-                    initializeTestEnvironment(env.SUITE_TO_RUN, env.NETWORK_NAME)
+                    // ✅ --- POM FIX: Only start the grid. Code is checked out later. ---
+                    echo "🚀 Starting Docker Grid..."
+                    startDockerGrid('docker-compose-grid.yml')
                 }
             }
         }
@@ -68,7 +71,7 @@ pipeline {
                     input message: "🛑 Proceed with full regression for branch '${env.BRANCH_NAME}'?"
                 }
             }
-        } // ✅ --- SYNTAX FIX: ADDED MISSING BRACE ---
+        }
 
         stage('Build & Run Parallel Tests') {
             when {
@@ -83,14 +86,18 @@ pipeline {
                             def mvnBase = "mvn -P force-local-cache clean test -P ${env.SUITE_TO_RUN} -Denv=${params.TARGET_ENVIRONMENT} -Dtest.suite=${env.SUITE_TO_RUN} -Dbrowser.headless=true"
                             parallel(
                                 Chrome: {
-                                    // ✅ --- SYNTAX FIX: Replaced agent/steps with docker.image().inside() ---
-                                    docker.image('flight-booking-agent-prewarmed:latest').inside("-v /var/run/docker.sock:/var/run/docker.sock --network=${env.NETWORK_NAME}") {
+                                    // ✅ --- POM/HANG/SYNTAX FIX ---
+                                    docker.image('flight-booking-agent-prewarmed:latest').inside("-v /var/run/docker.sock:/var/run/docker.sock --network=${env.NETWORK_NAME} --entrypoint=\"\"") {
+                                        cleanWs()
+                                        checkout scm
                                         sh script: "${mvnBase} -Dbrowser=chrome -Dreport.dir=chrome -Dproject.build.directory=target-chrome", returnStatus: true
                                     }
                                 },
                                 Firefox: {
-                                    // ✅ --- SYNTAX FIX: Replaced agent/steps with docker.image().inside() ---
-                                    docker.image('flight-booking-agent-prewarmed:latest').inside("-v /var/run/docker.sock:/var/run/docker.sock --network=${env.NETWORK_NAME}") {
+                                    // ✅ --- POM/HANG/SYNTAX FIX ---
+                                    docker.image('flight-booking-agent-prewarmed:latest').inside("-v /var/run/docker.sock:/var/run/docker.sock --network=${env.NETWORK_NAME} --entrypoint=\"\"") {
+                                        cleanWs()
+                                        checkout scm
                                         sh script: "${mvnBase} -Dbrowser=firefox -Dreport.dir=firefox -Dproject.build.directory=target-firefox", returnStatus: true
                                     }
                                 }
@@ -101,45 +108,6 @@ pipeline {
             }
         }
 
-        // ✅ NEW STAGE: Stash the checked-out code for parallel branches
-        stage('Stash Code') {
-            agent any
-            steps {
-                echo "Stashing project code for parallel test execution..."
-                stash name: 'code', includes: '**/*', excludes: '.git/**, target/**, reports/**, docker-compose.yml, docker-compose-grid.yml'
-            }
-        }
-
-        // ✅ CORRECTED: Parallel branches now unstash code
-        stage('Build & Run Parallel Tests') {
-            agent none
-            steps {
-                echo "🧪 Running parallel tests for: ${env.SUITE_TO_RUN}"
-                retry(2) {
-                    timeout(time: 2, unit: 'HOURS') {
-                        script {
-                            def mvnBase = "mvn -P force-local-cache clean test -P ${env.SUITE_TO_RUN} -Denv=${params.TARGET_ENVIRONMENT} -Dtest.suite=${env.SUITE_TO_RUN} -Dbrowser.headless=true"
-                            parallel(
-                                Chrome: {
-                                    unstash 'code'
-                                    docker.image('flight-booking-agent-prewarmed:latest').inside("-v /var/run/docker.sock:/var/run/docker.sock --network=${env.NETWORK_NAME}") {
-                                        sh script: "${mvnBase} -Dbrowser=chrome -Dreport.dir=chrome -Dproject.build.directory=target-chrome", returnStatus: true
-                                    }
-                                },
-                                Firefox: {
-                                    unstash 'code'
-                                    docker.image('flight-booking-agent-prewarmed:latest').inside("-v /var/run/docker.sock:/var/run/docker.sock --network=${env.NETWORK_NAME}") {
-                                        sh script: "${mvnBase} -Dbrowser=firefox -Dreport.dir=firefox -Dproject.build.directory=target-firefox", returnStatus: true
-                                    }
-                                }
-                            )
-                        }
-                    }
-                }
-            }
-        }
-
-        // ✅ ADD THIS NEW STAGE
         stage('Stash Artifacts') {
             agent any
             steps {
@@ -147,14 +115,15 @@ pipeline {
                 stash name: 'build-artifacts', includes: 'reports/**, **/surefire-reports/**, **/regression-failure-summary.txt', allowEmpty: true
             }
         }
+    } // ✅ --- BUILD 17/18 SYNTAX FIX: This brace closes 'stages' ---
 
     post {
         always {
             script {
-                // ✅ Use the wrapper with fixed args
-                docker.image('flight-booking-agent-prewarmed:latest').inside('-v /var/run/docker.sock:/var/run/docker.sock') {
-                    
-                    echo "--- Starting Guaranteed Post-Build Processing ---" // ✅ Moved echo to top
+                // ✅ --- HANG FIX: Added --entrypoint="" ---
+                docker.image('flight-booking-agent-prewarmed:latest').inside('-v /var/run/docker.sock:/var/run/docker.sock --entrypoint=""') {
+
+                    echo "--- Starting Guaranteed Post-Build Processing ---"
 
                     try {
                         unstash 'build-artifacts'
@@ -223,20 +192,19 @@ pipeline {
                 }
             }
         }
-        
-        // ✅ CORRECTED SYNTAX: 'success' block was missing
+
         success {
             echo "✅ Build SUCCESS. All tests passed."
             script {
                 echo "⏱️ Build duration: ${currentBuild.durationString}"
             }
         }
-        
+
         unstable {
             script {
                 echo "⚠️ Build UNSTABLE. Tests failed. Check the 'Test Dashboard' for detailed results."
                 echo "⏱️ Build duration: ${currentBuild.durationString}"
-                
+
                 // Fail the build for protected branches when tests are unstable
                 if (env.BRANCH_NAME in branchConfig.productionCandidateBranches) {
                     error("❌ Failing build due to test failures in protected branch '${env.BRANCH_NAME}'. Test failures in protected branches are not allowed.")
@@ -251,8 +219,8 @@ pipeline {
         }
         cleanup {
             script {
-                // ✅ Use the wrapper with fixed args
-                docker.image('flight-booking-agent-prewarmed:latest').inside('-v /var/run/docker.sock:/var/run/docker.sock') {
+                // ✅ --- HANG FIX: Added --entrypoint="" ---
+                docker.image('flight-booking-agent-prewarmed:latest').inside('-v /var/run/docker.sock:/var/run/docker.sock --entrypoint=""') {
                     echo '🧹 GUARANTEED CLEANUP: Shutting down Selenium Grid...'
                     stopDockerGrid('docker-compose-grid.yml')
                 }
