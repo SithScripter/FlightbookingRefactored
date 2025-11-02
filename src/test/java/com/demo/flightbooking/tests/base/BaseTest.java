@@ -216,18 +216,5 @@ public class BaseTest {
                 classLogger.error("❌ Failed to write to merged failure summary", e);
             }
         }
-
-
-        // Copy the report to index.html if Jenkins expects it
-        try {
-            Path source = Paths.get(reportPath + reportFileName);
-            Path target = Paths.get(reportPath + "index.html");
-            if (Files.exists(source)) {
-                Files.copy(source, target, StandardCopyOption.REPLACE_EXISTING);
-                classLogger.info("📄 Report copied to index.html for Jenkins display.");
-            }
-        } catch (IOException e) {
-            classLogger.error("❌ Failed to copy report to index.html", e);
-        }
     }
 }
