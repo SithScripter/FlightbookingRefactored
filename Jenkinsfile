@@ -42,8 +42,8 @@ pipeline {
             agent {
                 docker {
                     image 'flight-booking-agent-prewarmed:latest'
-                    // ✅ --- HANG FIX: Added --entrypoint="" ---
-                    args "-v /var/run/docker.sock:/var/run/docker.sock --entrypoint=\"\""
+                    // ✅ --- HANG FIX: Removed --entrypoint from Initialize to allow grid startup ---
+                    args "-v /var/run/docker.sock:/var/run/docker.sock"
                 }
             }
             steps {
