@@ -116,10 +116,6 @@ pipeline {
                 }
             }
         }
-
-        // ✅ --- STASH FIX: This stage is no longer needed ---
-        // stage('Stash Artifacts') { ... }
-
     }
 
     post {
@@ -130,7 +126,6 @@ pipeline {
 
                     echo "--- Starting Guaranteed Post-Build Processing ---"
 
-                    // ✅ --- STASH FIX: Unstash BOTH sets of artifacts ---
                     try {
                         unstash 'chrome-artifacts'
                     } catch (e) {
@@ -142,9 +137,9 @@ pipeline {
                         echo "⚠️ Firefox artifacts not found to unstash."
                     }
 
-                    // Copy report files to expected index.html names
-                    sh 'cp reports/chrome/smoke-chrome-report.html reports/chrome/index.html || echo "Chrome report not found"'
-                    sh 'cp reports/firefox/smoke-firefox-report.html reports/firefox/index.html || echo "Firefox report not found"'
+                    // ✅ --- BUILD 25 FIX: Use the SUITE_TO_RUN variable ---
+                    sh "cp reports/chrome/${env.SUITE_TO_RUN}-chrome-report.html reports/chrome/index.html || echo 'Chrome report not found'"
+                    sh "cp reports/firefox/${env.SUITE_TO_RUN}-firefox-report.html reports/firefox/index.html || echo 'Firefox report not found'"
 
                     // 1. Publish Test Results (sets the final build status)
                     junit testResults: '**/surefire-reports/**/*.xml', allowEmptyResults: true
