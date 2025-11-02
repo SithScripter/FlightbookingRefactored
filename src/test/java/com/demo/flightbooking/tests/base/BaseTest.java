@@ -77,36 +77,39 @@ public class BaseTest {
     @Parameters("browser")
     @BeforeClass(alwaysRun = true)
     public void setUpClass() {
-        // ✅ Use dynamic logger for consistency
-        Logger classLogger = LogManager.getLogger(this.getClass());
-        
-        // Get browser from system property (set by Jenkins Maven command)
-        String browser = System.getProperty("browser", "chrome").toUpperCase();
-        
-        // Determine suite and report directory (e.g., chrome or firefox)
-        String reportDir = System.getProperty("report.dir", browser.toLowerCase()); // fallback to browser
-        String suiteName = System.getProperty("test.suite", "default");
+        // ✅ --- THIS IS THE FIX ---
+        if (extentReports.get() == null) {
+            // ✅ Use dynamic logger for consistency
+            Logger classLogger = LogManager.getLogger(this.getClass());
+            
+            // Get browser from system property (set by Jenkins Maven command)
+            String browser = System.getProperty("browser", "chrome").toUpperCase();
+            
+            // Determine suite and report directory (e.g., chrome or firefox)
+            String reportDir = System.getProperty("report.dir", browser.toLowerCase()); // fallback to browser
+            String suiteName = System.getProperty("test.suite", "default");
 
-        String reportPath = "reports/" + reportDir + "/";
-        new File(reportPath).mkdirs(); // Ensure folder exists
+            String reportPath = "reports/" + reportDir + "/";
+            new File(reportPath).mkdirs(); // Ensure folder exists
 
-        // 👇 File name like regression-chrome-report.html
-        String reportFileName = suiteName + "-" + reportDir + "-report.html";
+            // 👇 File name like regression-chrome-report.html
+            String reportFileName = suiteName + "-" + reportDir + "-report.html";
 
-        // Create and configure ExtentSparkReporter
-        ExtentSparkReporter sparkReporter = new ExtentSparkReporter(reportPath + reportFileName);
-        sparkReporter.config().setOfflineMode(true);
-        sparkReporter.config().setDocumentTitle("Test Report: " + suiteName.toUpperCase() + " - " + reportDir.toUpperCase());
+            // Create and configure ExtentSparkReporter
+            ExtentSparkReporter sparkReporter = new ExtentSparkReporter(reportPath + reportFileName);
+            sparkReporter.config().setOfflineMode(true);
+            sparkReporter.config().setDocumentTitle("Test Report: " + suiteName.toUpperCase() + " - " + reportDir.toUpperCase());
 
-        // Create new ExtentReports and attach reporter
-        ExtentReports reports = new ExtentReports();
-        reports.attachReporter(sparkReporter);
-        reports.setSystemInfo("Tester", ConfigReader.getProperty("tester.name"));
-        reports.setSystemInfo("OS", System.getProperty("os.name"));
-        reports.setSystemInfo("Java Version", System.getProperty("java.version"));
-        extentReports.set(reports);
+            // Create new ExtentReports and attach reporter
+            ExtentReports reports = new ExtentReports();
+            reports.attachReporter(sparkReporter);
+            reports.setSystemInfo("Tester", ConfigReader.getProperty("tester.name"));
+            reports.setSystemInfo("OS", System.getProperty("os.name"));
+            reports.setSystemInfo("Java Version", System.getProperty("java.version"));
+            extentReports.set(reports);
 
-        classLogger.info("✅ Report will be generated at: {}/{}", reportPath, reportFileName);
+            classLogger.info("✅ Report will be generated at: {}/{}", reportPath, reportFileName);
+        }
     }
 
     /**
