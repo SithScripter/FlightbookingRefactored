@@ -140,7 +140,6 @@ post {
                         echo "⚠️ Firefox artifacts not found to unstash."
                     }
 
-                    // ✅ --- BUILD 25 FIX: Use the SUITE_TO_RUN variable ---
                     sh "cp reports/chrome/${env.SUITE_TO_RUN}-chrome-report.html reports/chrome/index.html || echo 'Chrome report not found'"
                     sh "cp reports/firefox/${env.SUITE_TO_RUN}-firefox-report.html reports/firefox/index.html || echo 'Firefox report not found'"
 
@@ -158,68 +157,78 @@ post {
                 }
 
                 // === STEP 2: Send notifications from the Jenkins Controller ===
-                // This logic is now OUTSIDE the docker.image().inside() block
+                // ✅ FIX: Wrap all controller-side logic in a 'node' block
+                // This provides the 'FilePath' context needed for unstash, fileExists, etc.
+                node {
+                    echo "--- Preparing notifications on Jenkins Controller (in a node context) ---"
 
-                echo "--- Preparing notifications on Jenkins Controller ---"
-
-                // We must unstash the files we need for notifications
-                try {
-                    unstash 'email-reports'
-                    unstash 'qase-results'
-                } catch (e) {
-                    echo "⚠️ Could not unstash reports for notification: ${e.getMessage()}"
-                    // Do not fail the build, just log the error
-                }
-
-                // ❌  REMOVED: def branchConfig = getBranchConfig()
-                // We use the variable 'branchConfig' defined on Line 3
-
-                if (env.BRANCH_NAME in branchConfig.productionCandidateBranches) {
-                    echo "🚀 Running notifications for production-candidate branch..."
+                    // Unstash files from agent
                     try {
-                        def qaseConfig = readJSON file: 'cicd/qase_config.json'
-                        def suiteSettings = qaseConfig[env.SUITE_TO_RUN]
-                        if (suiteSettings) {
-                            // Qase step also has network calls (curl),
-                            // so it MUST be outside the agent too.
-                            def qaseIds = (params.QASE_TEST_CASE_IDS?.trim()) ? params.QASE_TEST_CASE_IDS : suiteSettings.testCaseIds
-                            updateQase(
-                                projectCode: 'FB',
-                                credentialsId: 'qase-api-token',
-                                testCaseIds: qaseIds
-                            )
+                        unstash 'email-reports'
+                        unstash 'qase-results'
+                    } catch (e) {
+                        echo "⚠️ Could not unstash reports for notification: ${e.getMessage()}"
+                    }
+
+                    // ✅ FIX: Checkout SCM to get 'cicd/qase_config.json'
+                    checkout scm
+
+                    // We use the variable 'branchConfig' defined on Line 3
+
+                    if (env.BRANCH_NAME in branchConfig.productionCandidateBranches) {
+                        echo "🚀 Running notifications for production-candidate branch..."
+                        try {
+                            // This readJSON will now work
+                            def qaseConfig = readJSON file: 'cicd/qase_config.json'
+                            def suiteSettings = qaseConfig[env.SUITE_TO_RUN]
+                            if (suiteSettings) {
+                                // Qase step also has network calls (curl),
+                                // so it MUST be outside the agent too.
+
+                                // ✅ FIX: Corrected parameter name
+                                def qaseIds = (params.QASE_TEST_CASE_IDS?.trim()) ? params.QASE_TEST_CASE_IDS : suiteSettings.testCaseIds
+
+                                updateQase(
+                                    projectCode: 'FB',
+                                    credentialsId: 'qase-api-token',
+                                    testCaseIds: qaseIds
+                                )
+                                // This will now work
+                                sendBuildSummaryEmail(
+                                    suiteName: env.SUITE_TO_RUN,
+                                    emailCredsId: 'recipient-email-list'
+                                )
+                            }
+                        } catch (err) {
+                            echo "⚠️ Notification step failed: ${err.getMessage()}"
+                        }
+                    } else {
+                        echo "ℹ️ Skipping notifications for branch: ${env.BRANCH_NAME}"
+                    }
+
+                    // Conditional notifications based on build result
+                    if (currentBuild.result == 'UNSTABLE') {
+                        echo "📧 Notifying QA team for UNSTABLE build on ${env.BRANCH_NAME}"
+                        try {
+                            // This will now work
                             sendBuildSummaryEmail(
                                 suiteName: env.SUITE_TO_RUN,
                                 emailCredsId: 'recipient-email-list'
                             )
+                        } catch (err) {
+                            echo "⚠️ Email notification failed: ${err.getMessage()}"
                         }
-                    } catch (err) {
-                        echo "⚠️ Notification step failed: ${err.getMessage()}"
-                    }
-                } else {
-                    echo "ℹ️ Skipping notifications for branch: ${env.BRANCH_NAME}"
-                }
-
-                // Conditional notifications based on build result
-                if (currentBuild.result == 'UNSTABLE') {
-                    echo "📧 Notifying QA team for UNSTABLE build on ${env.BRANCH_NAME}"
-                    try {
-                        sendBuildSummaryEmail(
-                            suiteName: env.SUITE_TO_RUN,
-                            emailCredsId: 'recipient-email-list'
-                        )
-                    } catch (err) {
-                        echo "⚠️ Email notification failed: ${err.getMessage()}"
-                    }
-                } else if (currentBuild.result == 'FAILURE') {
-                    echo "📧 Notifying DevOps team for FAILURE build on ${env.BRANCH_NAME}"
-                    try {
-                        sendBuildSummaryEmail(
-                            suiteName: env.SUITE_TO_RUN,
-                            emailCredsId: 'recipient-email-list'
-                        )
-                    } catch (err) {
-                        echo "⚠️ Email notification failed: ${err.getMessage()}"
+                    } else if (currentBuild.result == 'FAILURE') {
+                        echo "📧 Notifying DevOps team for FAILURE build on ${env.BRANCH_NAME}"
+                        try {
+                            // This will now work
+                            sendBuildSummaryEmail(
+                                suiteName: env.SUITE_TO_RUN,
+                                emailCredsId: 'recipient-email-list'
+                            )
+                        } catch (err) {
+                            echo "⚠️ Email notification failed: ${err.getMessage()}"
+                        }
                     }
                 }
             }
