@@ -171,7 +171,8 @@ post {
                     // Do not fail the build, just log the error
                 }
 
-                def branchConfig = getBranchConfig()
+                // ❌  REMOVED: def branchConfig = getBranchConfig()
+                // We use the variable 'branchConfig' defined on Line 3
 
                 if (env.BRANCH_NAME in branchConfig.productionCandidateBranches) {
                     echo "🚀 Running notifications for production-candidate branch..."
@@ -181,7 +182,7 @@ post {
                         if (suiteSettings) {
                             // Qase step also has network calls (curl),
                             // so it MUST be outside the agent too.
-                            def qaseIds = (params.QASE_TO_RUN?.trim()) ? params.QASE_TO_RUN : suiteSettings.testCaseIds
+                            def qaseIds = (params.QASE_TEST_CASE_IDS?.trim()) ? params.QASE_TEST_CASE_IDS : suiteSettings.testCaseIds
                             updateQase(
                                 projectCode: 'FB',
                                 credentialsId: 'qase-api-token',
@@ -237,7 +238,8 @@ post {
                 echo "⏱️ Build duration: ${currentBuild.durationString}"
 
                 // Fail the build for protected branches when tests are unstable
-                if (env.BRANCH_NAME in getBranchConfig().productionCandidateBranches) {
+                // ✅ FIXED: Re-use the 'branchConfig' variable from Line 3
+                if (env.BRANCH_NAME in branchConfig.productionCandidateBranches) {
                     error("❌ Failing build due to test failures in protected branch '${env.BRANCH_NAME}'. Test failures in protected branches are not allowed.")
                 }
             }
