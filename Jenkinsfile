@@ -120,117 +120,140 @@ pipeline {
         }
     }
 
-    post {
+post {
         always {
             script {
-                // ✅ --- HANG FIX: Added --entrypoint="" ---
-                docker.image('flight-booking-agent-prewarmed:latest').inside('-v /var/run/docker.sock:/var/run/docker.sock --entrypoint=""') {
 
-                    echo "--- Starting Guaranteed Post-Build Processing ---"
+                // === STEP 1: Process artifacts in an agent ===
+                docker.image('flight-booking-agent-prewarmed:latest').inside('-v /var/run/docker.sock:/var/run/docker.sock --entrypoint=""') { [cite: 82]
+
+                    echo "--- Starting Guaranteed Post-Build Processing (on agent) ---"
 
                     try {
-                        unstash 'chrome-artifacts'
+                        unstash 'chrome-artifacts' [cite: 83]
                     } catch (e) {
-                        echo "⚠️ Chrome artifacts not found to unstash."
+                        echo "⚠️ Chrome artifacts not found to unstash." [cite: 83]
                     }
                     try {
-                        unstash 'firefox-artifacts'
+                        unstash 'firefox-artifacts' [cite: 84]
                     } catch (e) {
-                        echo "⚠️ Firefox artifacts not found to unstash."
+                        echo "⚠️ Firefox artifacts not found to unstash." [cite: 85]
                     }
 
                     // ✅ --- BUILD 25 FIX: Use the SUITE_TO_RUN variable ---
-                    sh "cp reports/chrome/${env.SUITE_TO_RUN}-chrome-report.html reports/chrome/index.html || echo 'Chrome report not found'"
-                    sh "cp reports/firefox/${env.SUITE_TO_RUN}-firefox-report.html reports/firefox/index.html || echo 'Firefox report not found'"
+                    sh "cp reports/chrome/${env.SUITE_TO_RUN}-chrome-report.html reports/chrome/index.html || echo 'Chrome report not found'" [cite: 85-86]
+                    sh "cp reports/firefox/${env.SUITE_TO_RUN}-firefox-report.html reports/firefox/index.html || echo 'Firefox report not found'" [cite: 86-87]
 
                     // 1. Publish Test Results (sets the final build status)
-                    junit testResults: '**/surefire-reports/**/*.xml', allowEmptyResults: true
+                    junit testResults: '**/surefire-reports/**/*.xml', allowEmptyResults: true [cite: 87]
 
                     // 2. Generate and Publish HTML Reports (from shared library)
-                    generateDashboard(env.SUITE_TO_RUN, "${env.BUILD_NUMBER}")
-                    archiveAndPublishReports()
+                    generateDashboard(env.SUITE_TO_RUN, "${env.BUILD_NUMBER}") [cite: 88]
+                    archiveAndPublishReports() [cite: 88]
 
-                    // 3. Handle Notifications (Qase, Email)
-                    if (env.BRANCH_NAME in branchConfig.productionCandidateBranches) {
-                        echo "🚀 Running notifications for production-candidate branch..."
-                        try {
-                            def qaseConfig = readJSON file: 'cicd/qase_config.json'
-                            def suiteSettings = qaseConfig[env.SUITE_TO_RUN]
-                            if (suiteSettings) {
-                                def qaseIds = (params.QASE_TEST_CASE_IDS?.trim()) ? params.QASE_TEST_CASE_IDS : suiteSettings.testCaseIds
-                                updateQase(
-                                    projectCode: 'FB',
-                                    credentialsId: 'qase-api-token',
-                                    testCaseIds: qaseIds
-                                )
-                                sendBuildSummaryEmail(
-                                    suiteName: env.SUITE_TO_RUN,
-                                    emailCredsId: 'recipient-email-list'
-                                )
-                            }
-                        } catch (err) {
-                            echo "⚠️ Notification step failed: ${err.getMessage()}"
+                    // 3. Stash reports needed for email attachments
+                    echo "Stashing reports for notification step."
+                    stash name: 'email-reports', includes: 'reports/**'
+                    stash name: 'qase-results', includes: '**/testng-results.xml' // Stash Qase results
+                }
+
+                // === STEP 2: Send notifications from the Jenkins Controller ===
+                // This logic is now OUTSIDE the docker.image().inside() block
+
+                echo "--- Preparing notifications on Jenkins Controller ---"
+
+                // We must unstash the files we need for notifications
+                try {
+                    unstash 'email-reports'
+                    unstash 'qase-results'
+                } catch (e) {
+                    echo "⚠️ Could not unstash reports for notification: ${e.getMessage()}"
+                    // Do not fail the build, just log the error
+                }
+
+                def branchConfig = getBranchConfig()
+
+                if (env.BRANCH_NAME in branchConfig.productionCandidateBranches) { [cite: 88]
+                    echo "🚀 Running notifications for production-candidate branch..." [cite: 89]
+                    try {
+                        def qaseConfig = readJSON file: 'cicd/qase_config.json' [cite: 89]
+                        def suiteSettings = qaseConfig[env.SUITE_TO_RUN] [cite: 89]
+                        if (suiteSettings) { [cite: 90]
+                            // Qase step also has network calls (curl),
+                            // so it MUST be outside the agent too.
+                            def qaseIds = (params.QASE_TEST_CASE_IDS?.trim()) ? params.QASE_TEST_CASE_IDS : suiteSettings.testCaseIds [cite: 90]
+                            updateQase( [cite: 90]
+                                projectCode: 'FB', [cite: 91]
+                                credentialsId: 'qase-api-token', [cite: 91]
+                                testCaseIds: qaseIds [cite: 92]
+                            )
+                            sendBuildSummaryEmail( [cite: 92]
+                                suiteName: env.SUITE_TO_RUN, [cite: 93]
+                                emailCredsId: 'recipient-email-list' [cite: 93]
+                            )
                         }
-                    } else {
-                        echo "ℹ️ Skipping notifications for branch: ${env.BRANCH_NAME}"
+                    } catch (err) {
+                        echo "⚠️ Notification step failed: ${err.getMessage()}" [cite: 94]
                     }
+                } else {
+                    echo "ℹ️ Skipping notifications for branch: ${env.BRANCH_NAME}" [cite: 95]
+                }
 
-                    // Conditional notifications based on build result
-                    if (currentBuild.result == 'UNSTABLE') {
-                        echo "📧 Notifying QA team for UNSTABLE build on ${env.BRANCH_NAME}"
-                        try {
-                            sendBuildSummaryEmail(
-                                suiteName: env.SUITE_TO_RUN,
-                                emailCredsId: 'recipient-email-list'
-                            )
-                        } catch (err) {
-                            echo "⚠️ Email notification failed: ${err.getMessage()}"
-                        }
-                    } else if (currentBuild.result == 'FAILURE') {
-                        echo "📧 Notifying DevOps team for FAILURE build on ${env.BRANCH_NAME}"
-                        try {
-                            sendBuildSummaryEmail(
-                                suiteName: env.SUITE_TO_RUN,
-                                emailCredsId: 'recipient-email-list'
-                            )
-                        } catch (err) {
-                            echo "⚠️ Email notification failed: ${err.getMessage()}"
-                        }
+                // Conditional notifications based on build result
+                if (currentBuild.result == 'UNSTABLE') { [cite: 96]
+                    echo "📧 Notifying QA team for UNSTABLE build on ${env.BRANCH_NAME}" [cite: 96]
+                    try {
+                        sendBuildSummaryEmail( [cite: 96]
+                            suiteName: env.SUITE_TO_RUN, [cite: 97]
+                            emailCredsId: 'recipient-email-list' [cite: 97]
+                        )
+                    } catch (err) {
+                        echo "⚠️ Email notification failed: ${err.getMessage()}" [cite: 98]
+                    }
+                } else if (currentBuild.result == 'FAILURE') { [cite: 99]
+                    echo "📧 Notifying DevOps team for FAILURE build on ${env.BRANCH_NAME}" [cite: 99]
+                    try {
+                        sendBuildSummaryEmail( [cite: 99]
+                            suiteName: env.SUITE_TO_RUN, [cite: 100]
+                            emailCredsId: 'recipient-email-list' [cite: 100]
+                        )
+                    } catch (err) {
+                        echo "⚠️ Email notification failed: ${err.getMessage()}" [cite: 101]
                     }
                 }
             }
         }
 
         success {
-            echo "✅ Build SUCCESS. All tests passed."
+            echo "✅ Build SUCCESS. All tests passed." [cite: 102]
             script {
-                echo "⏱️ Build duration: ${currentBuild.durationString}"
+                echo "⏱️ Build duration: ${currentBuild.durationString}" [cite: 103]
             }
         }
 
         unstable {
             script {
-                echo "⚠️ Build UNSTABLE. Tests failed. Check the 'Test Dashboard' for detailed results."
+                echo "⚠️ Build UNSTABLE. Tests failed. Check the 'Test Dashboard' for detailed results." [cite: 104]
                 echo "⏱️ Build duration: ${currentBuild.durationString}"
 
                 // Fail the build for protected branches when tests are unstable
-                if (env.BRANCH_NAME in branchConfig.productionCandidateBranches) {
-                    error("❌ Failing build due to test failures in protected branch '${env.BRANCH_NAME}'. Test failures in protected branches are not allowed.")
+                if (env.BRANCH_NAME in getBranchConfig().productionCandidateBranches) { [cite: 104]
+                    error("❌ Failing build due to test failures in protected branch '${env.BRANCH_NAME}'. Test failures in protected branches are not allowed.") [cite: 105]
                 }
             }
         }
         failure {
-            echo "❌ Build FAILED. A critical error occurred in one of the stages."
+            echo "❌ Build FAILED. A critical error occurred in one of the stages." [cite: 106]
             script {
-                echo "⏱️ Build duration: ${currentBuild.durationString}"
+                echo "⏱️ Build duration: ${currentBuild.durationString}" [cite: 106]
             }
         }
         cleanup {
             script {
-                // ✅ --- HANG FIX: Added --entrypoint="" ---
-                docker.image('flight-booking-agent-prewarmed:latest').inside('-v /var/run/docker.sock:/var/run/docker.sock --entrypoint=""') {
+                // Cleanup must remain in the agent to run docker-compose
+                docker.image('flight-booking-agent-prewarmed:latest').inside('-v /var/run/docker.sock:/var/run/docker.sock --entrypoint=""') { [cite: 107]
                     echo '🧹 GUARANTEED CLEANUP: Shutting down Selenium Grid...'
-                    stopDockerGrid('docker-compose-grid.yml')
+                    stopDockerGrid('docker-compose-grid.yml') [cite: 107]
                 }
             }
         }
