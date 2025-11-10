@@ -63,6 +63,9 @@
 #temp files and folders
 /temp/
 
+#Project structure
+/project_structure.txt
+
 # Temporary test files
 VerifyMasking.java
 src/test/java/com/demo/flightbooking/listeners/ExtentTestListener.java
