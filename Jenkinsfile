@@ -127,9 +127,7 @@ post {
 
                 // === STEP 1: Process artifacts in an agent ===
                 docker.image('flight-booking-agent-prewarmed:latest').inside('-v /var/run/docker.sock:/var/run/docker.sock --entrypoint=""') {
-
                     echo "--- Starting Guaranteed Post-Build Processing (on agent) ---"
-
                     try {
                         unstash 'chrome-artifacts'
                     } catch (e) {
@@ -143,27 +141,18 @@ post {
 
                     sh "cp reports/chrome/${env.SUITE_TO_RUN}-chrome-report.html reports/chrome/index.html || echo 'Chrome report not found'"
                     sh "cp reports/firefox/${env.SUITE_TO_RUN}-firefox-report.html reports/firefox/index.html || echo 'Firefox report not found'"
-
-                    // 1. Publish Test Results (sets the final build status)
                     junit testResults: '**/surefire-reports/**/*.xml', allowEmptyResults: true
-
-                    // 2. Generate and Publish HTML Reports (from shared library)
                     generateDashboard(env.SUITE_TO_RUN, "${env.BUILD_NUMBER}")
                     archiveAndPublishReports()
 
-                    // 3. Stash reports needed for email attachments
                     echo "Stashing reports for notification step."
                     stash name: 'email-reports', includes: 'reports/**'
-                    stash name: 'qase-results', includes: '**/testng-results.xml' // Stash Qase results
+                    stash name: 'qase-results', includes: '**/testng-results.xml'
                 }
 
-                // === STEP 2: Send notifications from the Jenkins Controller ===
-                // ✅ FIX: Wrap all controller-side logic in a 'node' block
-                // This provides the 'FilePath' context needed for unstash, fileExists, etc.
+                // === STEP 2: Unified Notifications (on Controller) ===
                 node {
                     echo "--- Preparing notifications on Jenkins Controller (in a node context) ---"
-
-                    // Unstash files from agent
                     try {
                         unstash 'email-reports'
                         unstash 'qase-results'
@@ -171,64 +160,48 @@ post {
                         echo "⚠️ Could not unstash reports for notification: ${e.getMessage()}"
                     }
 
-                    // ✅ FIX: Checkout SCM to get 'cicd/qase_config.json'
                     checkout scm
 
-                    // We use the variable 'branchConfig' defined on Line 3
-
+                    // --- 2a. Qase Update Logic (Prod Branches Only) ---
                     if (env.BRANCH_NAME in branchConfig.productionCandidateBranches) {
-                        echo "🚀 Running notifications for production-candidate branch..."
+                        echo "🚀 Running Qase update for production-candidate branch..."
                         try {
-                            // This readJSON will now work
                             def qaseConfig = readJSON file: 'cicd/qase_config.json'
                             def suiteSettings = qaseConfig[env.SUITE_TO_RUN]
                             if (suiteSettings) {
-                                // Qase step also has network calls (curl),
-                                // so it MUST be outside the agent too.
-
-                                // ✅ FIX: Corrected parameter name
                                 def qaseIds = (params.QASE_TEST_CASE_IDS?.trim()) ? params.QASE_TEST_CASE_IDS : suiteSettings.testCaseIds
-
                                 updateQase(
                                     projectCode: 'FB',
                                     credentialsId: 'qase-api-token',
                                     testCaseIds: qaseIds
                                 )
-                                // This will now work
-                                sendBuildSummaryEmail(
-                                    suiteName: env.SUITE_TO_RUN,
-                                    emailCredsId: 'recipient-email-list'
-                                )
                             }
                         } catch (err) {
-                            echo "⚠️ Notification step failed: ${err.getMessage()}"
+                            echo "⚠️ Qase update failed: ${err.getMessage()}"
                         }
-                    } else {
-                        echo "ℹ️ Skipping notifications for branch: ${env.BRANCH_NAME}"
                     }
 
-                    // Conditional notifications based on build result
-                    if (currentBuild.result == 'UNSTABLE') {
-                        echo "📧 Notifying QA team for UNSTABLE build on ${env.BRANCH_NAME}"
-                        try {
-                            // This will now work
-                            sendBuildSummaryEmail(
-                                suiteName: env.SUITE_TO_RUN,
-                                emailCredsId: 'recipient-email-list'
-                            )
-                        } catch (err) {
-                            echo "⚠️ Email notification failed: ${err.getMessage()}"
-                        }
-                    } else if (currentBuild.result == 'FAILURE') {
-                        echo "📧 Notifying DevOps team for FAILURE build on ${env.BRANCH_NAME}"
-                        try {
-                            // This will now work
-                            sendBuildSummaryEmail(
-                                suiteName: env.SUITE_TO_RUN,
-                                emailCredsId: 'recipient-email-list'
-                            )
-                        } catch (err) {
-                            echo "⚠️ Email notification failed: ${err.getMessage()}"
+                    // --- 2b. Unified Email Logic ---
+                    def currentResult = currentBuild.result ?: 'SUCCESS'
+                    def previousResult = previousBuild?.result ?: 'SUCCESS'
+
+                    // Only send notifications for failed or unstable builds
+                    if (currentResult == 'UNSTABLE' || currentResult == 'FAILURE') {
+
+                        // POLISH 1: Only email if the status has CHANGED (e.g., SUCCESS -> UNSTABLE)
+                        if (currentResult != previousResult) {
+                            echo "✅ Build status changed to ${currentResult}. Sending notification."
+                            try {
+                                // POLISH 2: Pass branchName to the library for branch-aware recipients
+                                sendBuildSummaryEmail(
+                                    suiteName: env.SUITE_TO_RUN,
+                                    branchName: env.BRANCH_NAME
+                                )
+                            } catch (err) {
+                                echo "⚠️ Email notification failed: ${err.getMessage()}"
+                            }
+                        } else {
+                            echo "ℹ️ Skipping email: Build status (${currentResult}) is unchanged from previous build."
                         }
                     }
                 }
@@ -246,11 +219,8 @@ post {
             script {
                 echo "⚠️ Build UNSTABLE. Tests failed. Check the 'Test Dashboard' for detailed results."
                 echo "⏱️ Build duration: ${currentBuild.durationString}"
-
-                // Fail the build for protected branches when tests are unstable
-                // ✅ FIXED: Re-use the 'branchConfig' variable from Line 3
                 if (env.BRANCH_NAME in branchConfig.productionCandidateBranches) {
-                    error("❌ Failing build due to test failures in protected branch '${env.BRANCH_NAME}'. Test failures in protected branches are not allowed.")
+                    error("❌ Failing build due to test failures in protected branch '${env.BRANCH_NAME}'.")
                 }
             }
         }
@@ -262,7 +232,6 @@ post {
         }
         cleanup {
             script {
-                // Cleanup must remain in the agent to run docker-compose
                 docker.image('flight-booking-agent-prewarmed:latest').inside('-v /var/run/docker.sock:/var/run/docker.sock --entrypoint=""') {
                     echo '🧹 GUARANTEED CLEANUP: Shutting down Selenium Grid...'
                     stopDockerGrid('docker-compose-grid.yml')
