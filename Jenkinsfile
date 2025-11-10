@@ -183,7 +183,7 @@ post {
 
                     // --- 2b. Unified Email Logic ---
                     def currentResult = currentBuild.result ?: 'SUCCESS'
-                    def previousResult = previousBuild?.result ?: 'SUCCESS'
+                    def previousResult = currentBuild.previousBuild?.result ?: 'SUCCESS'
 
                     // Only send notifications for failed or unstable builds
                     if (currentResult == 'UNSTABLE' || currentResult == 'FAILURE') {
