@@ -58,23 +58,19 @@
 - **Location**: `src/test/java/com/demo/flightbooking/tests/`
 - **Features**:
   - Parallel test execution across browsers
-  - Test grouping and categorization
   - Data providers for data-driven testing
   - Custom listeners for test lifecycle management
   - Retry mechanisms with configurable retry counts
 
 ### 5. Test Listeners & Reporting
-- **Location**: `src/test/java/com/demo/flightbooking/listeners/`
-- **Components**:
-  - TestListener: Custom TestNG listener for enhanced reporting
-  - TestReporter: Custom reporting integration
-  - RetryAnalyzer: Configurable test retry logic
-- **Features**:
-  - Screenshot capture on failure
-  - Custom reporting hooks
-  - Test execution tracking
-
-### 6. Utilities & Helpers
+  - **Location**: `src/test/java/com/demo/flightbooking/listeners/`
+  - **Components**:
+    - TestListener: Custom TestNG listener for enhanced reporting
+    - RetryAnalyzer: Configurable test retry logic
+  - **Features**:
+    - Screenshot capture on failure
+    - Custom reporting hooks
+    - Test execution tracking
 - **Location**: `src/main/java/com/demo/flightbooking/utils/`
 - **Components**:
   - ConfigReader: Configuration file parsing and management
