@@ -35,7 +35,6 @@ pipeline {
             }
         }
         // force jenkins to run test automatically
-        // force jenkins to run test automatically
 
 
         stage('Initialize & Start Grid') {
@@ -51,8 +50,6 @@ pipeline {
             }
             steps {
                 retry(2) {
-                    // Create the Docker network explicitly before starting containers
-                    sh "docker network create ${env.NETWORK_NAME} || true"
                     echo "🚀 Starting Docker Grid..."
 
                     // ✅ --- LIBRARY FIX: Pass correct Hub URL and Network Name ---
@@ -60,8 +57,7 @@ pipeline {
                         'docker-compose-grid.yml',         // 1. composeFile
                         120,                               // 2. maxWaitSeconds (default)
                         5,                                 // 3. checkIntervalSeconds (default)
-                        'http://selenium-hub:4444/wd/hub', // 4. hubUrl (our override)
-                        env.NETWORK_NAME                   // 5. networkName (our override)
+                        'http://selenium-hub:4444/wd/hub'  // 4. hubUrl (our override)
                     )
                 }
             }
