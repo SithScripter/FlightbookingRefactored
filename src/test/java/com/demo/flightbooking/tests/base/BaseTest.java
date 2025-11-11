@@ -149,20 +149,22 @@ public class BaseTest {
         methodLogger.info("📝 ExtentTest created for test: {} on {}", method.getName(), browserName);
     }
 
-    /**
-     * This method runs after each test method.
-     * It checks the test result, takes a screenshot on failure, logs the status
-     * in the report, and then quits the WebDriver instance for the current thread.
-     *
-     * @param result The result of the test method that has just run.
-     */
     @AfterMethod(alwaysRun = true)
     public void tearDown(ITestResult result) {
         // ✅ Use logger after MDC is still set (cleared at the end)
         Logger methodLogger = LogManager.getLogger(this.getClass());
         
         // The TestListener is now 100% responsible for all report logging.
-        // This method is ONLY for cleanup.
+        // This method is ONLY for cleanup and failure summaries for Jenkins.
+
+        // ✅ Add failure to summary for Jenkins email/dashboard (TestListener handles ExtentReports)
+        if (result.getStatus() == ITestResult.FAILURE) {
+            String failureMsg = "❌ " + result.getMethod().getMethodName()
+                    + " FAILED: " + result.getThrowable().getMessage().split("\n")[0];
+            failureSummaries.add(failureMsg);
+
+            methodLogger.error("❌ Test failed: {}", result.getMethod().getMethodName());
+        }
 
         DriverManager.quitDriver();
         methodLogger.info("🧹 WebDriver quit after test: {}", result.getMethod().getMethodName());
