@@ -63,8 +63,9 @@
 #temp files and folders
 /temp/
 
-#Project structure
+#Project specific files
 /project_structure.txt
+
 
 # Temporary test files
 VerifyMasking.java
