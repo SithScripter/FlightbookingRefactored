@@ -115,7 +115,6 @@ public class DriverManager {
             }
 
             driver.get().manage().window().maximize();
-            driver.get().manage().timeouts().implicitlyWait(Duration.ofSeconds(0));
         }
 
         return driver.get();

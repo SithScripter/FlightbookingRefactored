@@ -74,7 +74,6 @@ public class BaseTest {
      * ✅ Runs once per <test> tag in testng XML.
      * Creates a unique ExtentSparkReporter per browser/stage.
      */
-    @Parameters("browser")
     @BeforeClass(alwaysRun = true)
     public void setUpClass() {
         // ✅ --- THIS IS THE FIX ---
@@ -150,32 +149,21 @@ public class BaseTest {
         methodLogger.info("📝 ExtentTest created for test: {} on {}", method.getName(), browserName);
     }
 
-    /**
-     * This method runs after each test method.
-     * It checks the test result, takes a screenshot on failure, logs the status
-     * in the report, and then quits the WebDriver instance for the current thread.
-     *
-     * @param result The result of the test method that has just run.
-     */
     @AfterMethod(alwaysRun = true)
     public void tearDown(ITestResult result) {
         // ✅ Use logger after MDC is still set (cleared at the end)
         Logger methodLogger = LogManager.getLogger(this.getClass());
         
-        ExtentTest test = ExtentManager.getTest();
-        WebDriver driver = DriverManager.getDriver();
+        // The TestListener is now 100% responsible for all report logging.
+        // This method is ONLY for cleanup and failure summaries for Jenkins.
 
-        if (test != null) {
-            if (result.getStatus() == ITestResult.FAILURE) {
-                String failureMsg = "❌ " + result.getMethod().getMethodName()
-                        + " FAILED: " + result.getThrowable().getMessage().split("\n")[0];
-                failureSummaries.add(failureMsg);
+        // ✅ Add failure to summary for Jenkins email/dashboard (TestListener handles ExtentReports)
+        if (result.getStatus() == ITestResult.FAILURE) {
+            String failureMsg = "❌ " + result.getMethod().getMethodName()
+                    + " FAILED: " + result.getThrowable().getMessage().split("\n")[0];
+            failureSummaries.add(failureMsg);
 
-                test.fail(result.getThrowable());
-                methodLogger.error("❌ Test failed: {}", result.getMethod().getMethodName());
-            } else {
-                test.log(Status.PASS, "✅ Test passed");
-            }
+            methodLogger.error("❌ Test failed: {}", result.getMethod().getMethodName());
         }
 
         DriverManager.quitDriver();

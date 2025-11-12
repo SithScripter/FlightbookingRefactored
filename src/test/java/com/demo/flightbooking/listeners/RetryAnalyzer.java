@@ -13,6 +13,9 @@ import org.openqa.selenium.WebDriverException;
 import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.ElementNotInteractableException;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -28,6 +31,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class RetryAnalyzer implements IRetryAnalyzer {
 
+    private static final Logger logger = LogManager.getLogger(RetryAnalyzer.class);
     private static final int maxRetryCount = ConfigReader.getPropertyAsInt("test.retry.maxcount");
 
     // Track retries per-method-invocation (handles DataProvider and parallelism)
@@ -156,16 +160,15 @@ public class RetryAnalyzer implements IRetryAnalyzer {
      * Professional logging for retry decisions
      */
     private void logDecision(String testMethod, String exceptionType, int attemptCount, String reason) {
-        String status = attemptCount > 0 ? "🔄" : "🔴";
-        System.out.println(String.format("%s [%s] %s - %s (attempt %d/%d)",
-            status, testMethod, reason, exceptionType, attemptCount + 1, maxRetryCount + 1));
+        String status = attemptCount > 0 ? "🔄 RETRY" : "🔴 SKIP";
+        logger.info("[{}] {} - {} ({}, attempt {}/{})",
+            testMethod, reason, exceptionType, status, attemptCount + 1, maxRetryCount + 1);
     }
 
     /**
      * Professional logging for final failure decisions
      */
     private void logFailure(String testMethod, String exceptionType, String reason) {
-        System.out.println(String.format("🔴 [%s] Not retrying - %s: %s",
-            testMethod, reason, exceptionType));
+        logger.error("[{}] Not retrying - {}: {}", testMethod, reason, exceptionType);
     }
 }

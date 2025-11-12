@@ -1,9 +1,10 @@
 package com.demo.flightbooking.pages;
 
 import com.demo.flightbooking.model.Passenger;
+import com.demo.flightbooking.utils.ConfigReader;
+import com.demo.flightbooking.utils.WebDriverUtils;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.support.ui.Select;
 
 /**
  * Represents the Purchase Page of the BlazeDemo application.
@@ -12,7 +13,8 @@ import org.openqa.selenium.support.ui.Select;
  */
 public class PurchasePage extends BasePage {
 
-    // Locators for the purchase form elements
+    // WebDriverUtils for robust element interactions
+    private final WebDriverUtils webDriverUtils;
     private final By firstNameInput = By.id("inputName");
     private final By addressInput = By.id("address");
     private final By cityInput = By.id("city");
@@ -32,6 +34,7 @@ public class PurchasePage extends BasePage {
      */
     public PurchasePage(WebDriver driver) {
         super(driver);
+        this.webDriverUtils = new WebDriverUtils(driver, ConfigReader.getPropertyAsInt("test.timeout"));
     }
 
     // --- High-Level Service Method ---
@@ -63,50 +66,47 @@ public class PurchasePage extends BasePage {
     // --- Low-Level Action Methods ---
 
     public void enterFirstName(String firstName) {
-        driver.findElement(firstNameInput).sendKeys(firstName);
+        webDriverUtils.sendKeys(firstNameInput, firstName);
     }
 
     public void enterAddress(String address) {
-        driver.findElement(addressInput).sendKeys(address);
+        webDriverUtils.sendKeys(addressInput, address);
     }
 
     public void enterCity(String city) {
-        driver.findElement(cityInput).sendKeys(city);
+        webDriverUtils.sendKeys(cityInput, city);
     }
 
     public void enterState(String state) {
-        driver.findElement(stateInput).sendKeys(state);
+        webDriverUtils.sendKeys(stateInput, state);
     }
 
     public void enterZipCode(String zipCode) {
-        driver.findElement(zipCodeInput).sendKeys(zipCode);
+        webDriverUtils.sendKeys(zipCodeInput, zipCode);
     }
 
     public void selectCardType(String cardType) {
-        Select select = new Select(driver.findElement(cardTypeSelect));
-        select.selectByVisibleText(cardType);
+        webDriverUtils.selectByVisibleText(cardTypeSelect, cardType);
     }
 
     public void enterCardNumber(String cardNumber) {
-        driver.findElement(creditCardNumberInput).sendKeys(cardNumber);
+        webDriverUtils.sendKeys(creditCardNumberInput, cardNumber);
     }
 
     public void enterMonth(String month) {
-        driver.findElement(creditCardMonthInput).clear();
-        driver.findElement(creditCardMonthInput).sendKeys(month);
+        webDriverUtils.sendKeys(creditCardMonthInput, month);
     }
 
     public void enterYear(String year) {
-        driver.findElement(creditCardYearInput).clear();
-        driver.findElement(creditCardYearInput).sendKeys(year);
+        webDriverUtils.sendKeys(creditCardYearInput, year);
     }
 
     public void enterNameOnCard(String name) {
-        driver.findElement(nameOnCardInput).sendKeys(name);
+        webDriverUtils.sendKeys(nameOnCardInput, name);
     }
 
     public void tickRememberMeCheckbox() {
-        driver.findElement(rememberMeCheckbox).click();
+        webDriverUtils.click(rememberMeCheckbox);
     }
 
     /**
@@ -114,6 +114,6 @@ public class PurchasePage extends BasePage {
      */
     public void clickPurchaseFlightButton() {
         logger.info("Clicking on 'Purchase Flight' button");
-        driver.findElement(purchaseFlightButton).click();
+        webDriverUtils.click(purchaseFlightButton);
     }
 }
