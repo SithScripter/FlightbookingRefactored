@@ -8,19 +8,22 @@ import org.apache.logging.log4j.Logger;
 import com.demo.flightbooking.enums.EnvironmentType;
 
 /**
- * A utility class to read configuration settings from the config.properties file.
- * It uses a static block to load the properties once, making it efficient.
- * This class centralizes all configuration management.
+ * A utility class to read configuration settings.
+ *
+ * It uses a priority-based lookup to allow runtime overrides:
+ * 1. Java System Property (e.g., -Dbrowser=firefox)
+ * 2. config.properties file
+ * 3. A hardcoded default (if provided)
  */
 public class ConfigReader {
 
     private static final Logger logger = LogManager.getLogger(ConfigReader.class);
     private static final Properties properties = new Properties();
+    // Loads 'config.properties' from 'src/main/resources' or 'src/test/resources'
     private static final String CONFIG_FILE = System.getProperty("configFile", "config/config.properties");
-    
+
     /**
      * Static block to load the properties file when the class is initialized.
-     * This ensures the properties are loaded only once during the test execution.
      */
     static {
         try (InputStream stream = ConfigReader.class.getClassLoader().getResourceAsStream(CONFIG_FILE)) {
@@ -37,36 +40,65 @@ public class ConfigReader {
     }
 
     /**
+     * Gets a property with a priority-based lookup:
+     * 1. Java System Property (e.g., -Dkey=value)
+     * 2. config.properties file
+     *
+     * @param key The property key to look up.
+     * @param defaultValue A default value if nothing is found.
+     * @return The found property value.
+     */
+    private static String getPropertyFromSources(String key, String defaultValue) {
+        String value = System.getProperty(key);
+        if (value != null) {
+            logger.debug("Overriding property '{}' with System Property: '{}'", key, value);
+            return value;
+        }
+
+        return properties.getProperty(key, defaultValue);
+    }
+
+    /**
      * Retrieves a property value by its key.
      *
      * @param key The key of the property to retrieve.
-     * @return The property value as a String.
+     * @return The property value as a String, or null if not found.
      */
     public static String getProperty(String key) {
-        String value = properties.getProperty(key);
+        String value = getPropertyFromSources(key, null);
         if (value == null) {
-            logger.warn("Property not found: {}", key);
+            logger.warn("Property not found: {} (and no default was set)", key);
         }
         return value;
     }
-    
+
+    /**
+     * Retrieves a property value by its key, returning a default if not found.
+     *
+     * @param key The key of the property to retrieve.
+     * @param defaultValue The default value to return if the key is not found.
+     * @return The property value as a String.
+     */
+    public static String getProperty(String key, String defaultValue) {
+        return getPropertyFromSources(key, defaultValue);
+    }
+
     /**
      * Retrieves a property value and converts it to an integer.
+     * Uses the default-supporting getProperty method.
      *
      * @param key The key of the property to retrieve.
      * @return The property value as an int.
      */
     public static int getPropertyAsInt(String key) {
-        String value = getProperty(key);
-        if (value != null) {
-            try {
-                return Integer.parseInt(value.trim());
-            } catch (NumberFormatException e) {
-                logger.error("Property '{}' value '{}' is not a valid integer.", key, value, e);
-                return 0; // Return 0 or some default on format error
-            }
+        // Use the new default-aware getProperty method
+        String value = getProperty(key, "0"); // Default to "0" if not found
+        try {
+            return Integer.parseInt(value.trim());
+        } catch (NumberFormatException e) {
+            logger.error("Property '{}' value '{}' is not a valid integer. Defaulting to 0.", key, value, e);
+            return 0; // Return 0 on format error
         }
-        return 0;
     }
 
     /**
@@ -75,10 +107,12 @@ public class ConfigReader {
      * @return The target application URL for the test run.
      */
     public static String getApplicationUrl() {
-        String env = System.getProperty("env"); // Reads -Denv=QA from the command line
+        // 'env' is a perfect example of a system property override
+        String env = System.getProperty("env");
         if (env == null || env.trim().isEmpty()) {
             logger.info("No 'env' system property provided. Using default 'application.url'.");
-            return getProperty("application.url");
+            // Use the default-aware method
+            return getProperty("application.url", "https://blazedemo.com/");
         }
 
         EnvironmentType environmentType;
@@ -91,7 +125,7 @@ public class ConfigReader {
         }
 
         String propertyKey = environmentType.name().toLowerCase() + ".url";
-        String url = getProperty(propertyKey);
+        String url = getProperty(propertyKey); // Will use the new priority logic
 
         if (url == null || url.isEmpty()) {
             throw new RuntimeException("URL for environment '" + environmentType + "' not found in config.properties for key '" + propertyKey + "'");
