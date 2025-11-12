@@ -35,7 +35,7 @@ pipeline {
             }
         }
         // force jenkins to run test automatically
-        
+
 
 
         stage('Initialize & Start Grid') {
@@ -45,15 +45,16 @@ pipeline {
             agent {
                 docker {
                     image 'flight-booking-agent-prewarmed:latest'
-                    // ✅ --- HANG FIX: Added --entrypoint="" ---
+                    alwaysPull false  // Prevent unnecessary image pulls
+                    // --- HANG FIX: Added --entrypoint="" ---
                     args "-v /var/run/docker.sock:/var/run/docker.sock --entrypoint=\"\""
                 }
             }
             steps {
                 retry(2) {
-                    echo "🚀 Starting Docker Grid..."
+                    echo " Starting Docker Grid..."
 
-                    // ✅ --- LIBRARY FIX: Pass correct Hub URL and Network Name ---
+                    // --- LIBRARY FIX: Pass correct Hub URL and Network Name ---
                     startDockerGrid(
                         'docker-compose-grid.yml',         // 1. composeFile
                         120,                               // 2. maxWaitSeconds (default)

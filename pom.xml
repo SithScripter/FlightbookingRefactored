@@ -11,7 +11,7 @@
     <properties>
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>
-        <selenium.version>4.26.0</selenium.version>
+        <selenium.version>4.27.0</selenium.version>
         <testng.version>7.10.2</testng.version>
         <webdrivermanager.version>6.1.0</webdrivermanager.version>
         <jackson.version>2.18.0</jackson.version>
@@ -140,7 +140,7 @@
                     <properties>
                         <property>
                             <name>listener</name>
-                            <value>org.testng.reporters.JUnitXMLReporter,com.demo.flightbooking.listeners.TestListener</value>
+                            <value>org.testng.reporters.TestNGReporter,org.testng.reporters.JUnitXMLReporter,com.demo.flightbooking.listeners.TestListener</value>
                         </property>
                     </properties>
                 </configuration>
