@@ -62,11 +62,11 @@ public class DriverManager {
             BrowserType browserType = BrowserType.valueOf(browser.toUpperCase());
 
             // ✅ Read headless flag from config.properties
-            boolean isHeadless = Boolean.parseBoolean(ConfigReader.getProperty("browser.headless"));
+            boolean isHeadless = Boolean.parseBoolean(ConfigReader.getProperty("browser.headless", "true"));
             logger.info("Headless mode enabled? {}", isHeadless);
 
             // ✅ Read Grid toggle
-            boolean useGrid = Boolean.parseBoolean(ConfigReader.getProperty("selenium.grid.enabled"));
+            boolean useGrid = Boolean.parseBoolean(ConfigReader.getProperty("selenium.grid.enabled", "true"));
             logger.info("Grid enabled? {}", useGrid);
             logger.info("Execution mode: {}", useGrid ? "REMOTE (Grid)" : "LOCAL");
             logger.info("Initializing {} driver for thread: {}", browserType, Thread.currentThread().threadId());
@@ -77,7 +77,7 @@ public class DriverManager {
             if (useGrid) {
                 try {
                     // Validate required properties
-                    String hubHost = ConfigReader.getProperty("selenium.hubHost");
+                    String hubHost = ConfigReader.getProperty("selenium.hubHost", "selenium-hub");
                     String urlFormat = ConfigReader.getProperty("seleniumhub.urlFormat");
 
                     if (hubHost == null || hubHost.isEmpty()) {

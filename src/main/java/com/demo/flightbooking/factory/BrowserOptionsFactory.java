@@ -32,20 +32,18 @@ public class BrowserOptionsFactory {
      */
 
     public static MutableCapabilities getOptions(BrowserType browserType, boolean isHeadless) {
-        logger.info("Creating options for browser: {}", browserType);
         
-//        // ✅ Load headless config from config.properties (default: false)
-//        isHeadless = Boolean.parseBoolean(ConfigReader.getProperty("browser.headless"));
+        // ✅ Load headless config from config.properties (default: false)
+        isHeadless = Boolean.parseBoolean(ConfigReader.getProperty("browser.headless", "false"));
         logger.info("Headless mode for {}: {}", browserType, isHeadless);
         
         // ✅ Read the grid configuration setting
-        boolean useGrid = Boolean.parseBoolean(ConfigReader.getProperty("selenium.grid.enabled"));
+        boolean useGrid = Boolean.parseBoolean(ConfigReader.getProperty("selenium.grid.enabled", "true"));
         
         switch (browserType) {
             case CHROME:
                 // --- THIS IS THE CHANGE ---
                 // WebDriverManager setup is now handled here.
-            	
                 // ✅ Only run WebDriverManager setup if not using the Grid
                 if (!useGrid) {
                     WebDriverManager.chromedriver().setup();
