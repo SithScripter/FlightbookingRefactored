@@ -26,31 +26,49 @@ A robust Selenium test automation framework designed for end-to-end testing of t
 
 ### How to Run Tests
 
-#### 1. Local Execution
+The framework supports two primary modes of execution: running tests locally on your machine for development and debugging, and running them against a Dockerized Selenium Grid for CI/CD or comprehensive cross-browser testing.
+
+#### 1. Running from the Command Line (using Maven)
+
+This is the recommended approach for running full test suites.
+
+**A) Local Execution (No Docker Grid)**
+
+This mode uses WebDriverManager to automatically manage browser drivers on your local machine. It's perfect for quick feedback during development.
 
 ```bash
-# Run smoke tests on local Chrome
+# Run the smoke suite on your local Chrome browser
 mvn clean test -P smoke -Dselenium.grid.enabled=false
 
-# Run regression tests on local Firefox
+# Run the regression suite on your local Firefox browser
 mvn clean test -P regression -Dbrowser=firefox -Dselenium.grid.enabled=false
 ```
 
-#### 2. Dockerized Selenium Grid
+**B) Dockerized Selenium Grid Execution**
+
+This mode is used by the CI/CD pipeline and is ideal for running the full regression suite across multiple browsers in parallel.
 
 ```bash
-# Start the Selenium Grid
+# 1. Start the Selenium Grid in the background
 docker-compose -f docker-compose-grid.yml up -d
 
-# Run tests against the grid
+# 2. Run the smoke suite against the grid (defaults to Chrome)
 mvn clean test -P smoke -Dselenium.grid.enabled=true
 
-# Run regression tests on the grid with parallel execution
-mvn clean test -P regression -Dselenium.grid.enabled=true
-
-# Shut down the grid when finished
+# 3. Shut down the grid when you're finished
 docker-compose -f docker-compose-grid.yml down
 ```
+
+#### 2. Running from an IDE (e.g., IntelliJ, Eclipse)
+
+For debugging a single test or a small group of tests, running directly from your IDE is most efficient.
+
+1.  **Open the Test Class**: Navigate to the test file you want to run (e.g., `EndToEndBookingTest.java`).
+2.  **Configure TestNG Defaults**:
+    *   Go to your IDE's run/debug configuration settings for TestNG.
+    *   In the "VM options" or "VM arguments" field, you **must** specify `-Dselenium.grid.enabled=false` to ensure the test runs locally.
+    *   You can also add other parameters like `-Dbrowser=firefox` if you wish to override the default (Chrome).
+3.  **Run the Test**: Right-click on the test method or class and select "Run" or "Debug".
 
 ## 📊 Test Reports
 
