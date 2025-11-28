@@ -9,6 +9,7 @@
         <classes>
             <class name="com.demo.flightbooking.tests.booking.EndToEndBookingTest"/>
             <class name="com.demo.flightbooking.tests.booking.PurchaseFormValidationTest"/>
+            <class name="com.demo.flightbooking.tests.api.SampleApiTest"/>
         </classes>
     </test>
 </suite>
