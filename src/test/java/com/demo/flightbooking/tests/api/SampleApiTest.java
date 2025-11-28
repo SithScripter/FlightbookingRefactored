@@ -2,6 +2,7 @@ package com.demo.flightbooking.tests.api;
 
 import com.aventstack.extentreports.ExtentTest;
 import com.aventstack.extentreports.Status;
+import com.demo.flightbooking.tests.base.ApiBaseTest;
 import com.demo.flightbooking.tests.base.BaseTest;
 import com.demo.flightbooking.utils.ExtentManager;
 import io.restassured.RestAssured;
@@ -10,7 +11,7 @@ import org.testng.annotations.Test;
 
 import static org.hamcrest.Matchers.equalTo;
 
-public class SampleApiTest extends BaseTest {
+public class SampleApiTest extends ApiBaseTest {
 
     @Test(description = "Perform a sample API test to demonstrate API testing capability.")
     public void sampleApiTest() {
