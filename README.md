@@ -1,36 +1,48 @@
 # ✈️ Flight Booking Automation Framework
 
-A robust Selenium test automation framework designed for end-to-end testing of the BlazeDemo flight booking application. Built with industry best practices for scalability, maintainability, and ease of use.
+A robust Selenium test automation framework designed for end-to-end testing of the BlazeDemo flight booking application. Built with **enterprise-grade patterns** for scalability, maintainability, and ease of use.
 
 ## ✨ Features
 
-* **Page Object Model (POM)**: Clean separation of UI elements from test logic
-* **Data-Driven Testing**: External test data management using JSON and CSV formats
-* **Cross-Browser Testing**: Supports Chrome and Firefox in headless mode
-* **Parallel Execution**: TestNG-powered parallel test execution across multiple browsers
-* **Dockerized Grid**: Pre-configured Selenium Grid for consistent test environments
-* **Multi-Environment Support**: Configurable testing across QA, Staging, and Production environments
-* **CI/CD Ready**: Jenkins pipeline integration with parallel test execution and automated reporting
-* **Rich Reporting**: ExtentReports with detailed test results, screenshots, and custom dashboards
-* **Modular Design**: Clean architecture with separate layers for pages, tests, and utilities
-* **Retry Mechanisms**: Built-in test retry logic with configurable retry counts
-* **Comprehensive Logging**: Log4j2 integration with structured logging and configurable log levels
+### Core Framework
+- Page Object Model (POM) with composition pattern
+- Modular layered architecture (Infrastructure → Domain → Test)
+- Comprehensive Log4j2 logging with MDC context
+
+### Testing Capabilities
+- Data-driven testing (JSON, CSV, DataFaker)
+- Cross-browser execution with parallelization where applicable
+- Intelligent retry mechanism for transient failures
+
+### Execution & Infrastructure
+- Dockerized Selenium Grid with isolated networks
+- Multi-environment execution (QA/Staging/Production)
+- Jenkins CI/CD ready with shared library patterns
+
+### Reporting
+- ExtentReports with screenshots and timelines
+- Consolidated HTML dashboards in CI/CD
+- Failure aggregation and notifications
 
 ## 🚀 Getting Started
 
+This section covers **local and CI-style execution**. For CI/CD internals and architecture, see the documentation links below.
+
 ### Prerequisites
 
-* Java 21+
-* Apache Maven 3.8+
-* Docker Desktop (for grid execution)
+- Java 21+
+- Apache Maven 3.8+
+- Docker Desktop (for grid execution)
 
 ### How to Run Tests
 
 The framework supports two primary modes of execution: running tests locally on your machine for development and debugging, and running them against a Dockerized Selenium Grid for CI/CD or comprehensive cross-browser testing.
 
+> These commands mirror how the framework executes inside Jenkins CI.
+
 #### 1. Running from the Command Line (using Maven)
 
-This is the recommended approach for running full test suites.
+This is the recommended approach for running full test suites. These commands reflect **how the framework is executed in CI**, with local overrides for development.
 
 **A) Local Execution (No Docker Grid)**
 
@@ -61,20 +73,18 @@ docker-compose -f docker-compose-grid.yml down
 
 #### 2. Running from an IDE (e.g., IntelliJ, Eclipse)
 
-For debugging a single test or a small group of tests, running directly from your IDE is most efficient.
-
-1.  **Open the Test Class**: Navigate to the test file you want to run (e.g., `EndToEndBookingTest.java`).
-2.  **Configure TestNG Defaults**:
-    *   Go to your IDE's run/debug configuration settings for TestNG.
-    *   In the "VM options" or "VM arguments" field, you **must** specify `-Dselenium.grid.enabled=false` to ensure the test runs locally.
-    *   You can also add other parameters like `-Dbrowser=firefox` if you wish to override the default (Chrome).
-3.  **Run the Test**: Right-click on the test method or class and select "Run" or "Debug".
+For debugging, tests can also be run directly from the IDE with:
+```
+-Dselenium.grid.enabled=false
+```
 
 ## 📊 Test Reports
 
 After test execution, detailed HTML reports are available in:
 - `reports/{browser}/` - Individual test run reports
 - `test-output/` - TestNG reports and logs
+
+Reports are generated **per browser execution** and aggregated in CI.
 
 ## 🔧 Configuration
 
@@ -83,6 +93,8 @@ Edit `src/test/resources/config/config.properties` to configure:
 - Browser settings and headless mode
 - Timeouts and retry configurations
 - Reporting preferences and tester information
+
+Configuration is externalized to support non-code environment changes in CI/CD.
 
 ### Test Data Formats
 
@@ -96,14 +108,26 @@ The framework supports multiple test data formats:
 - **Smoke Suite**: Quick validation tests (`testng-smoke.xml`)
 - **Regression Suite**: Comprehensive test coverage (`testng-regression.xml`)
 
-## Project Documentation
+## 📚 Architecture & CI/CD Documentation
 
-For a deeper look into the framework's design and CI/CD process, please see the following guides:
-- **[Architecture Guide](docs/ARCHITECTURE.md)**: An overview of the framework's layers and design patterns.
-- **[Pipeline Guide](docs/PIPELINE_GUIDE.md)**: A detailed explanation of the Jenkins CI/CD pipeline, its features, and operational policies.
+This repository intentionally separates **architectural intent** from **execution behavior**.
+
+> Start with **CI-CD-architecture.md** for the big picture, then refer to **PIPELINE_GUIDE.md** for execution details.
+
+- **[CI-CD-architecture.md](docs/CI-CD-architecture.md)**  
+  High-level CI/CD design — infrastructure, Docker strategy, JCasC, Selenium Grid, and integrations.
+
+- **[PIPELINE_GUIDE.md](docs/PIPELINE_GUIDE.md)**  
+  Operational truth — Jenkins pipeline behavior, branch policies, parameters, and execution flow.
+
+- **[ARCHITECTURE.md](docs/ARCHITECTURE.md)**  
+  Framework-level design — layers, patterns, and test architecture.
+
+- **[FRAMEWORK_CONSTRUCTION_PLAYBOOK.md](docs/FRAMEWORK_CONSTRUCTION_PLAYBOOK.md)**  
+  Step-by-step evolution — how the framework was built incrementally across phases.
 
 ## 📝 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-Happy Testing! 🧪🚀
+This project is intended as a **reference implementation** for enterprise-grade test automation.

@@ -3,7 +3,6 @@ package com.demo.flightbooking.tests.api;
 import com.aventstack.extentreports.ExtentTest;
 import com.aventstack.extentreports.Status;
 import com.demo.flightbooking.tests.base.ApiBaseTest;
-import com.demo.flightbooking.tests.base.BaseTest;
 import com.demo.flightbooking.utils.ExtentManager;
 import io.restassured.RestAssured;
 import io.restassured.response.Response;
