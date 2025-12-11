@@ -21,8 +21,9 @@ pipeline {
     parameters {
         choice(name: 'SUITE_NAME', choices: ['smoke', 'regression'], description: 'Select suite (only applies to manual runs).')
         choice(name: 'TARGET_ENVIRONMENT', choices: ['PRODUCTION', 'STAGING', 'QA'], description: 'Select test environment.')
-        booleanParam(name: 'MANUAL_APPROVAL', defaultValue: false, description: '🛑 Only relevant if "regression" is selected. Ignored for "smoke".')
-        string(name: 'QASE_TEST_CASE_IDS', defaultValue: '', description: 'Optional: Override default Qase IDs.')
+        booleanParam(name: 'MANUAL_APPROVAL', defaultValue = false, description = '🛑 Only relevant if "regression" is selected. Ignored for "smoke".')
+        string(name: 'QASE_TEST_CASE_IDS', defaultValue = '', description: 'Optional: Override default Qase IDs.')
+        choice(name: 'QUALITY_GATE_THRESHOLD', choices: ['0', '1', '2', '5'], description: 'Max test failures before quality gate fails')
     }
 
     stages {
@@ -51,6 +52,7 @@ pipeline {
             steps {
                 retry(2) {
                     echo " Starting Docker Grid..."
+                    printBuildMetadata(env.SUITE_TO_RUN)
 
                     // --- LIBRARY FIX: Pass correct Hub URL and Network Name ---
                     startDockerGrid(
@@ -140,6 +142,24 @@ post {
                     junit testResults: '**/surefire-reports/**/*.xml', allowEmptyResults: true
                     generateDashboard(env.SUITE_TO_RUN, "${env.BUILD_NUMBER}")
                     archiveAndPublishReports()
+
+                    // === QUALITY GATE ENFORCEMENT ===
+                    def testResults = checkTestFailures()
+                    def totalFailures = (testResults.failures ?: 0) + (testResults.errors ?: 0)
+                    def maxFailures = params.QUALITY_GATE_THRESHOLD?.toInteger() ?: 0
+
+                    echo "📊 Quality Gate: ${totalFailures}/${testResults.total} failures (threshold: ${maxFailures})"
+
+                    if (totalFailures > maxFailures) {
+                        if (env.BRANCH_NAME in branchConfig.productionCandidateBranches) {
+                            error "❌ Quality Gate Failed: ${totalFailures} test failures (threshold: ${maxFailures}) on production branch"
+                        } else {
+                            currentBuild.result = 'UNSTABLE'
+                            echo "⚠️ Quality Gate: Build marked UNSTABLE due to ${totalFailures} failures"
+                        }
+                    } else {
+                        echo "✅ Quality Gate Passed"
+                    }
 
                     echo "Stashing reports for notification step."
                     stash name: 'email-reports', includes: 'reports/**'
