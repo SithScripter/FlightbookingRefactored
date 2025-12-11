@@ -123,8 +123,6 @@ This repository intentionally separates **architectural intent** from **executio
 - **[ARCHITECTURE.md](docs/ARCHITECTURE.md)**  
   Framework-level design — layers, patterns, and test architecture.
 
-- **[FRAMEWORK_CONSTRUCTION_PLAYBOOK.md](docs/FRAMEWORK_CONSTRUCTION_PLAYBOOK.md)**  
-  Step-by-step evolution — how the framework was built incrementally across phases.
 
 ## 📝 License
 
