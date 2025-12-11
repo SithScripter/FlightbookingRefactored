@@ -21,8 +21,8 @@ pipeline {
     parameters {
         choice(name: 'SUITE_NAME', choices: ['smoke', 'regression'], description: 'Select suite (only applies to manual runs).')
         choice(name: 'TARGET_ENVIRONMENT', choices: ['PRODUCTION', 'STAGING', 'QA'], description: 'Select test environment.')
-        booleanParam(name: 'MANUAL_APPROVAL', defaultValue = false, description = '🛑 Only relevant if "regression" is selected. Ignored for "smoke".')
-        string(name: 'QASE_TEST_CASE_IDS', defaultValue = '', description: 'Optional: Override default Qase IDs.')
+        booleanParam(name: 'MANUAL_APPROVAL', defaultValue: false, description: '🛑 Only relevant if "regression" is selected. Ignored for "smoke".')
+        string(name: 'QASE_TEST_CASE_IDS', defaultValue: '', description: 'Optional: Override default Qase IDs.')
         choice(name: 'QUALITY_GATE_THRESHOLD', choices: ['0', '1', '2', '5'], description: 'Max test failures before quality gate fails')
     }
 
