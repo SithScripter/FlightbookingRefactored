@@ -35,7 +35,6 @@ pipeline {
             }
         }
         // force jenkins to run test automatically
-        
 
         stage('Initialize & Start Grid') {
             when {
