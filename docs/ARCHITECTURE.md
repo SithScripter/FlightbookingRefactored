@@ -71,6 +71,7 @@
     - Screenshot capture on failure
     - Custom reporting hooks
     - Test execution tracking
+    - **CI/CD Integration**: Reports are parsed by Jenkins quality gates for automated pass/fail enforcement
 - **Location**: `src/main/java/com/demo/flightbooking/utils/`
 - **Components**:
   - ConfigReader: Configuration file parsing and management

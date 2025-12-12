@@ -97,9 +97,12 @@ Reusable pipeline logic is extracted into shared library functions:
 | ------------------------- | ----------------------------------------------- |
 | `getBranchConfig()`       | Branch policies (main, feature, prod-candidate) |
 | `determineTestSuite()`    | Decide smoke vs regression                      |
+| `printBuildMetadata()`    | Log build metadata (suite, branch, trigger)     |
 | `startDockerGrid()`       | Start + health-check Selenium Grid              |
 | `stopDockerGrid()`        | Safe cleanup                                    |
+| `checkTestFailures()`     | Quality gate - parse test results, enforce thresholds |
 | `generateDashboard()`     | Consolidated HTML dashboard                     |
+| `archiveAndPublishReports()` | Archive artifacts and publish HTML reports   |
 | `sendBuildSummaryEmail()` | Email notifications                             |
 | `updateQase()`            | Push results to Qase                            |
 
@@ -245,13 +248,37 @@ Two layered Docker images:
 
 ---
 
-## 13. Future Evolution (Roadmap)
+## 13. Quality Gates
+
+### Purpose
+
+Automated validation of test results to prevent broken code from progressing through the pipeline.
+
+### Implementation
+
+* **Threshold-based enforcement**: Configurable via `QUALITY_GATE_THRESHOLD` Jenkins parameter
+* **Dual-format XML parsing**: Supports both JUnit (surefire) and TestNG reports
+* **Parallel result aggregation**: Combines Chrome + Firefox test results
+* **Branch-specific policies**:
+  * Feature branches → UNSTABLE (allows continued development)
+  * Protected branches → FAILURE (prevents merges)
+
+### Key Features
+
+* Type-safe parameter conversion
+* Handles "no tests found" scenarios
+* Clear console logging with emojis for visibility
+* Smart email notifications (only on status changes)
+
+---
+
+## 14. Future Evolution (Roadmap)
 
 * Kubernetes-based Selenium Grid
 * Jenkins agent autoscaling
 * Prometheus + Grafana monitoring
 * Artifact storage in S3 / Nexus
-* Quality gates based on failure thresholds
+* Quality gate enhancements (percentage thresholds, trend analysis)
 
 ---
 

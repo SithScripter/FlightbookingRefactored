@@ -19,10 +19,11 @@ A robust Selenium test automation framework designed for end-to-end testing of t
 - Multi-environment execution (QA/Staging/Production)
 - Jenkins CI/CD ready with shared library patterns
 
-### Reporting
+### Reporting & Quality Gates
 - ExtentReports with screenshots and timelines
 - Consolidated HTML dashboards in CI/CD
-- Failure aggregation and notifications
+- Automated quality gates with configurable thresholds
+- Failure aggregation and smart notifications
 
 ## 🚀 Getting Started
 
