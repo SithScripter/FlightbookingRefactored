@@ -9,7 +9,8 @@ import org.openqa.selenium.WebDriver;
 /**
  * Represents the Purchase Page of the BlazeDemo application.
  * This is the final step where the user enters their personal and payment
- * information to complete the booking.Encapsulates all elements and actions available on this page.
+ * information to complete the booking.Encapsulates all elements and actions
+ * available on this page.
  */
 public class PurchasePage extends BasePage {
 
@@ -30,6 +31,7 @@ public class PurchasePage extends BasePage {
 
     /**
      * Constructor for the PurchasePage.
+     * 
      * @param driver The WebDriver instance.
      */
     public PurchasePage(WebDriver driver) {
@@ -46,8 +48,6 @@ public class PurchasePage extends BasePage {
      * @param passenger The Passenger record containing all necessary data.
      */
     public void fillPurchaseForm(Passenger passenger) {
-        // --- CHANGE: From Getters to Record Accessors ---
-        // We now use the direct accessor methods provided by the record.
         logger.info("Filling purchase form for passenger: {}", passenger.firstName());
         enterFirstName(passenger.firstName());
         enterAddress(passenger.address());
@@ -61,7 +61,6 @@ public class PurchasePage extends BasePage {
         enterNameOnCard(passenger.cardName());
         tickRememberMeCheckbox();
     }
-
 
     // --- Low-Level Action Methods ---
 
@@ -110,7 +109,8 @@ public class PurchasePage extends BasePage {
     }
 
     /**
-     * Clicks the "Purchase Flight" button to submit the form and complete the booking.
+     * Clicks the "Purchase Flight" button to submit the form and complete the
+     * booking.
      */
     public void clickPurchaseFlightButton() {
         logger.info("Clicking on 'Purchase Flight' button");

@@ -19,24 +19,23 @@ import com.demo.flightbooking.utils.WebDriverUtils;
 
 /**
  * Contains the end-to-end test case for successfully booking a flight.
- * This test class demonstrates the complete user flow from searching for a flight
+ * This test class demonstrates the complete user flow from searching for a
+ * flight
  * to receiving a booking confirmation.
  */
 public class EndToEndBookingTest extends BaseTest {
 
     /**
-     * Verifies the successful end-to-end booking of a flight using data from a JSON file.
+     * Verifies the successful end-to-end booking of a flight using data from a JSON
+     * file.
      * The test is data-driven, meaning it will run once for each passenger object
      * provided by the JsonDataProvider.
      *
-     * @param passenger A Passenger object containing all necessary data for one test run.
+     * @param passenger A Passenger object containing all necessary data for one
+     *                  test run.
      */
-    @Test(
-            dataProvider = "passengerData", 
-            dataProviderClass = JsonDataProvider.class,
-            groups = {"regression", "smoke", "passenger_booking"},
-            testName = "Verify successful end-to-end booking using data from JSON"
-        )
+    @Test(dataProvider = "passengerData", dataProviderClass = JsonDataProvider.class, groups = { "regression", "smoke",
+            "passenger_booking" }, testName = "Verify successful end-to-end booking using data from JSON")
     public void testEndToEndBookingFromJson(Passenger passenger) {
         WebDriver driver = DriverManager.getDriver();
         WebDriverUtils webDriverUtils = new WebDriverUtils(driver, ConfigReader.getPropertyAsInt("test.timeout"));
@@ -44,13 +43,12 @@ public class EndToEndBookingTest extends BaseTest {
         ExtentTest test = ExtentManager.getTest();
 
         if (test != null) {
-            // --- CHANGE: Using record accessors passenger.firstName() instead of passenger.getFirstName() ---
             test.info("Navigated to: " + ConfigReader.getApplicationUrl());
             test.info("Attempting booking for passenger (JSON): " + passenger.firstName() + " " + passenger.lastName() +
-                      " from " + passenger.origin() + " to " + passenger.destination());
+                    " from " + passenger.origin() + " to " + passenger.destination());
         }
         logger.info("Starting flight booking (JSON) for passenger: {} {} from {} to {}",
-                    passenger.firstName(), passenger.lastName(), passenger.origin(), passenger.destination());
+                passenger.firstName(), passenger.lastName(), passenger.origin(), passenger.destination());
 
         HomePage homePage = new HomePage(driver);
         homePage.findFlights(passenger.origin(), passenger.destination());
@@ -70,26 +68,23 @@ public class EndToEndBookingTest extends BaseTest {
 
         boolean urlContainsConfirmation = webDriverUtils.waitUntilUrlContains("/confirmation.php");
         Assert.assertTrue(urlContainsConfirmation, "Did not navigate to confirmation page after purchase.");
-        
+
         if (test != null) {
             test.pass("Flight booking (JSON) successful for: " + passenger.firstName() + " " + passenger.lastName());
         }
-        logger.info("Flight booking (JSON) completed for passenger: {} {}", passenger.firstName(), passenger.lastName());
+        logger.info("Flight booking (JSON) completed for passenger: {} {}", passenger.firstName(),
+                passenger.lastName());
     }
 
     /**
      * Verifies flight search for all valid routes from CSV data.
      * This test is data-driven, running for each route pair in routes.csv.
      *
-     * @param departureCity The departure city.
+     * @param departureCity   The departure city.
      * @param destinationCity The destination city.
      */
-    @Test(
-            dataProvider = "routesData",
-            dataProviderClass = CsvDataProvider.class,
-            groups = {"regression", "smoke"},
-            testName = "Verify flight search for all valid routes from CSV"
-        )
+    @Test(dataProvider = "routesData", dataProviderClass = CsvDataProvider.class, groups = { "regression",
+            "smoke" }, testName = "Verify flight search for all valid routes from CSV")
     public void testAllValidRoutesFromCsv(String departureCity, String destinationCity) {
         WebDriver driver = DriverManager.getDriver();
         WebDriverUtils webDriverUtils = new WebDriverUtils(driver, ConfigReader.getPropertyAsInt("test.timeout"));
@@ -105,7 +100,8 @@ public class EndToEndBookingTest extends BaseTest {
         homePage.findFlights(departureCity, destinationCity);
 
         boolean urlContainsReserve = webDriverUtils.waitUntilUrlContains("/reserve.php");
-        Assert.assertTrue(urlContainsReserve, "Did not navigate to reserve page for route " + departureCity + " to " + destinationCity);
+        Assert.assertTrue(urlContainsReserve,
+                "Did not navigate to reserve page for route " + departureCity + " to " + destinationCity);
 
         if (test != null) {
             test.pass("Flight search successful for route: " + departureCity + " to " + destinationCity);

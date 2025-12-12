@@ -12,7 +12,8 @@ import java.util.List;
 
 /**
  * A utility class providing robust explicit wait methods for Selenium.
- * Using explicit waits is a best practice that makes tests more stable and reliable
+ * Using explicit waits is a best practice that makes tests more stable and
+ * reliable
  * by waiting for specific conditions to be met before proceeding, rather than
  * using fixed (and often brittle) sleeps.
  */
@@ -39,7 +40,8 @@ public class WebDriverUtils {
      *
      * @param locator The By locator of the element.
      * @return The WebElement if found and visible.
-     * @throws TimeoutException if the element is not found within the timeout period.
+     * @throws TimeoutException if the element is not found within the timeout
+     *                          period.
      */
     public WebElement findElement(By locator) {
         logger.debug("Attempting to find element by: {}", locator);
@@ -54,7 +56,8 @@ public class WebDriverUtils {
     }
 
     /**
-     * Waits for all elements located by the given locator to be present on the DOM and visible, then returns them.
+     * Waits for all elements located by the given locator to be present on the DOM
+     * and visible, then returns them.
      *
      * @param locator The By locator of the elements.
      * @return A list of WebElements.
@@ -68,7 +71,8 @@ public class WebDriverUtils {
             return elements;
         } catch (TimeoutException e) {
             logger.warn("No elements found or not visible within timeout for: {}", locator);
-            return List.of(); // Return an empty list instead of throwing an exception if no elements are found
+            return List.of(); // Return an empty list instead of throwing an exception if no elements are
+                              // found
         }
     }
 
@@ -97,7 +101,7 @@ public class WebDriverUtils {
      * Clears the field before sending keys.
      *
      * @param locator The By locator of the input field.
-     * @param text The text to send.
+     * @param text    The text to send.
      */
     public void sendKeys(By locator, String text) {
         logger.info("Sending keys '{}' to element: {}", text, locator);
@@ -116,7 +120,7 @@ public class WebDriverUtils {
      * Selects an option from a dropdown by visible text.
      *
      * @param locator The By locator of the select element.
-     * @param text The visible text of the option to select.
+     * @param text    The visible text of the option to select.
      */
     public void selectByVisibleText(By locator, String text) {
         logger.info("Selecting '{}' from dropdown: {}", text, locator);
@@ -200,18 +204,17 @@ public class WebDriverUtils {
         try {
             return wait.until(ExpectedConditions.titleContains(titleChunk));
         } catch (TimeoutException e) {
-            logger.error("Page title did not contain '{}' within timeout. Current title: {}", titleChunk, driver.getTitle());
+            logger.error("Page title did not contain '{}' within timeout. Current title: {}", titleChunk,
+                    driver.getTitle());
             return false;
         }
     }
 
-    // ADDED: Wait until document.readyState === "complete"
     public static void waitForPageLoad(WebDriver driver, Duration timeout) {
         new WebDriverWait(driver, timeout)
                 .until(d -> "complete".equals(((JavascriptExecutor) d).executeScript("return document.readyState")));
     }
 
-    // ADDED: Wait until jQuery is idle (or not present)
     public static void waitForAjaxComplete(WebDriver driver, Duration timeout) {
         new WebDriverWait(driver, timeout).until(d -> {
             Object js = ((JavascriptExecutor) d).executeScript(
@@ -220,7 +223,6 @@ public class WebDriverUtils {
         });
     }
 
-    // ADDED: Click with element-to-be-clickable + JS fallback if intercepted
     public static void click(WebDriver driver, By locator, Duration timeout) {
         WebElement el = new WebDriverWait(driver, timeout)
                 .until(ExpectedConditions.elementToBeClickable(locator));
