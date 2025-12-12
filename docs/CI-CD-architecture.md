@@ -2,15 +2,15 @@
 
 ## 1. Overview
 
-This project uses a **fully containerized, Infrastructure-as-Code CI/CD setup** to execute Selenium + TestNG automation reliably across environments and browsers.
+This project uses a **Dockerized CI/CD setup with configuration-as-code** to execute Selenium + TestNG automation reliably across environments and browsers.
 
 Key principles:
 
-* **Everything as code** (pipeline, Jenkins config, infra)
+* **Configuration as code** (pipeline, Jenkins config, Docker)
 * **Reproducible builds** using Docker
 * **Fast execution** via pre-warmed build agents
 * **Scalable parallel testing** with Selenium Grid
-* **Production-grade observability & reporting**
+* **Structured reporting & notifications**
 
 ## 2. Quick Start
 
@@ -97,9 +97,12 @@ Reusable pipeline logic is extracted into shared library functions:
 | ------------------------- | ----------------------------------------------- |
 | `getBranchConfig()`       | Branch policies (main, feature, prod-candidate) |
 | `determineTestSuite()`    | Decide smoke vs regression                      |
+| `printBuildMetadata()`    | Log build metadata (suite, branch, trigger)     |
 | `startDockerGrid()`       | Start + health-check Selenium Grid              |
 | `stopDockerGrid()`        | Safe cleanup                                    |
+| `checkTestFailures()`     | Quality gate - parse test results, enforce thresholds |
 | `generateDashboard()`     | Consolidated HTML dashboard                     |
+| `archiveAndPublishReports()` | Archive artifacts and publish HTML reports   |
 | `sendBuildSummaryEmail()` | Email notifications                             |
 | `updateQase()`            | Push results to Qase                            |
 
@@ -235,24 +238,48 @@ Two layered Docker images:
 
 ---
 
-## 12. Why This Design (Interview Summary)
+## 12. Design Principles & Benefits
 
 * **Scalable:** Parallel browsers, isolated containers
 * **Reliable:** Thread-safe execution, deterministic builds
 * **Maintainable:** Shared libraries, clean separation of concerns
-* **Production-ready:** Docker, JCasC, IaC principles
+* **Production-style:** Docker, JCasC, IaC principles
 * **Extensible:** Easy move to Kubernetes, cloud agents, enhanced observability
 
 ---
 
-## 13. Future Evolution (Roadmap)
+## 13. Quality Gates
+
+### Purpose
+
+Automated validation of test results to prevent broken code from progressing through the pipeline.
+
+### Implementation
+
+* **Threshold-based enforcement**: Configurable via `QUALITY_GATE_THRESHOLD` Jenkins parameter
+* **Dual-format XML parsing**: Supports both JUnit (surefire) and TestNG reports
+* **Parallel result aggregation**: Combines Chrome + Firefox test results
+* **Branch-specific policies**:
+  * Feature branches → UNSTABLE (allows continued development)
+  * Protected branches → FAILURE (prevents merges)
+
+### Key Features
+
+* Type-safe parameter conversion
+* Handles "no tests found" scenarios
+* Clear console logging with emojis for visibility
+* Smart email notifications (only on status changes)
+
+---
+
+## 14. Future Evolution (Roadmap)
 
 * Kubernetes-based Selenium Grid
 * Jenkins agent autoscaling
 * Prometheus + Grafana monitoring
 * Artifact storage in S3 / Nexus
-* Quality gates based on failure thresholds
+* Quality gate enhancements (percentage thresholds, trend analysis)
 
 ---
 
-✅ **This CI/CD setup is designed to demonstrate senior-level QA + DevOps maturity, not just test execution.**
+✅ **This CI/CD setup implements senior-level QA + DevOps best practices with professional-grade tooling.**

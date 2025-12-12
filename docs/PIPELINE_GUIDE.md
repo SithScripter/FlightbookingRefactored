@@ -37,10 +37,29 @@ The following parameters are available when running a build manually in Jenkins:
 | TARGET_ENVIRONMENT | PRODUCTION, STAGING, QA | Specifies the test environment configuration to use. |
 | MANUAL_APPROVAL | true, false | If true, pauses the pipeline for manual approval before running regression tests on protected branches. |
 | QASE_TEST_CASE_IDS | String of IDs | (Optional) A comma-separated list of Qase Test Case IDs to update, overriding the defaults. |
+| QUALITY_GATE_THRESHOLD | 0, 1, 2, 5 | Maximum number of test failures allowed before the quality gate fails. Default is 0 (zero tolerance). |
+| FAIL_ON_NO_TESTS | true, false | If true, marks the build as UNSTABLE when no test results are found. Default is true. |
+
+### Quality Gate Enforcement
+
+The pipeline includes an automated quality gate that validates test results after every run:
+
+- **Threshold-Based Enforcement**: Configurable via `QUALITY_GATE_THRESHOLD` parameter (0, 1, 2, or 5 failures)
+- **Dual-Format Support**: Parses both JUnit (surefire) and TestNG XML reports accurately
+- **Parallel Aggregation**: Combines results from Chrome + Firefox executions
+- **Branch-Specific Policies**:
+  - **Feature branches**: Exceeding threshold marks build as `UNSTABLE` (allows continued development)
+  - **Protected branches** (main, enhancements): Exceeding threshold marks build as `FAILURE` (prevents bad merges)
+
+**Quality Gate Output Example:**
+```
+📊 Quality Gate: 4/39 failures (threshold: 0)
+⚠️ Quality Gate: Build marked UNSTABLE due to 4 failures
+```
 
 ### Notifications
 
-- **Email**: Sent to the QA team for UNSTABLE builds and the DevOps team for FAILURE builds.
+- **Email**: Sent when build status changes (e.g., SUCCESS → UNSTABLE). Includes quality gate summary and test failure details.
 - **Qase**: Test run results are automatically published to your Qase project.
 
 ### Guaranteed Cleanup
