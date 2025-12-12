@@ -23,7 +23,8 @@ pipeline {
         choice(name: 'TARGET_ENVIRONMENT', choices: ['PRODUCTION', 'STAGING', 'QA'], description: 'Select test environment.')
         booleanParam(name: 'MANUAL_APPROVAL', defaultValue: false, description: '🛑 Only relevant if "regression" is selected. Ignored for "smoke".')
         string(name: 'QASE_TEST_CASE_IDS', defaultValue: '', description: 'Optional: Override default Qase IDs.')
-        choice(name: 'QUALITY_GATE_THRESHOLD', choices: ['0', '1', '2', '5'], description: 'Max test failures before quality gate fails')
+    choice(name: 'QUALITY_GATE_THRESHOLD', choices: ['0', '1', '2', '5'], description: 'Max test failures before quality gate fails')
+    booleanParam(name: 'FAIL_ON_NO_TESTS', defaultValue: true, description: 'Mark build UNSTABLE if no test results found')
     }
 
     stages {
@@ -147,7 +148,18 @@ post {
                     // === QUALITY GATE ENFORCEMENT ===
                     def testResults = checkTestFailures()
                     def totalFailures = (testResults.failures ?: 0) + (testResults.errors ?: 0)
-                    def maxFailures = params.QUALITY_GATE_THRESHOLD?.toInteger() ?: 0
+                    def maxFailures = params.QUALITY_GATE_THRESHOLD ?
+                        params.QUALITY_GATE_THRESHOLD.toInteger() : 0
+
+                    // Handle no tests found scenario
+                    if (testResults.total == 0) {
+                        if (params.FAIL_ON_NO_TESTS) {
+                            currentBuild.result = 'UNSTABLE'
+                            echo "⚠️ Quality Gate: No tests found - marking UNSTABLE"
+                        } else {
+                            echo "ℹ️ Quality Gate: No tests found - allowed by configuration"
+                        }
+                    }
 
                     echo "📊 Quality Gate: ${totalFailures}/${testResults.total} failures (threshold: ${maxFailures})"
 
