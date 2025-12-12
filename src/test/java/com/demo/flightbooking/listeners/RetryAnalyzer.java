@@ -21,7 +21,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Professional grade retry analyzer for TestNG that intelligently retries only
- * infrastructure/timing issues while avoiding retries for genuine application bugs.
+ * infrastructure/timing issues while avoiding retries for genuine application
+ * bugs.
  *
  * Features:
  * - Type-safe exception checking with inheritance support
@@ -39,30 +40,28 @@ public class RetryAnalyzer implements IRetryAnalyzer {
 
     // Infrastructure/timing exceptions that benefit from retry
     private static final Set<Class<? extends Throwable>> RETRYABLE_EXCEPTIONS = new HashSet<>(
-        Arrays.asList(
-            StaleElementReferenceException.class,      // DOM changes during execution
-            ElementClickInterceptedException.class,    // UI element blocking
-            TimeoutException.class,                    // Network/timing issues
-            WebDriverException.class,                  // Browser/driver issues
-            NoSuchElementException.class,              // Element loading timing
-            ElementNotInteractableException.class,     // UI state timing
-            org.openqa.selenium.NoSuchSessionException.class,  // Session issues
-            org.openqa.selenium.SessionNotCreatedException.class // Browser startup
-        )
-    );
+            Arrays.asList(
+                    StaleElementReferenceException.class, // DOM changes during execution
+                    ElementClickInterceptedException.class, // UI element blocking
+                    TimeoutException.class, // Network/timing issues
+                    WebDriverException.class, // Browser/driver issues
+                    NoSuchElementException.class, // Element loading timing
+                    ElementNotInteractableException.class, // UI state timing
+                    org.openqa.selenium.NoSuchSessionException.class, // Session issues
+                    org.openqa.selenium.SessionNotCreatedException.class // Browser startup
+            ));
 
     // Application/logic exceptions that should NOT be retried
     private static final Set<Class<? extends Throwable>> NON_RETRYABLE_EXCEPTIONS = new HashSet<>(
-        Arrays.asList(
-            AssertionError.class,                      // Test logic failures
-            IllegalArgumentException.class,           // Code issues
-            NullPointerException.class,               // Programming errors
-            ClassCastException.class,                 // Type issues
-            NoSuchMethodException.class,              // Missing methods
-            IndexOutOfBoundsException.class,          // Data issues
-            IllegalStateException.class               // State issues
-        )
-    );
+            Arrays.asList(
+                    AssertionError.class, // Test logic failures
+                    IllegalArgumentException.class, // Code issues
+                    NullPointerException.class, // Programming errors
+                    ClassCastException.class, // Type issues
+                    NoSuchMethodException.class, // Missing methods
+                    IndexOutOfBoundsException.class, // Data issues
+                    IllegalStateException.class // State issues
+            ));
 
     @Override
     public boolean retry(ITestResult result) {
@@ -75,8 +74,8 @@ public class RetryAnalyzer implements IRetryAnalyzer {
         // Check for max retries with null-safe logging
         if (currentRetryCount >= maxRetryCount) {
             logFailure(result.getMethod().getMethodName(),
-                      (throwable != null) ? throwable.getClass().getSimpleName() : "N/A",
-                      "max retries reached");
+                    (throwable != null) ? throwable.getClass().getSimpleName() : "N/A",
+                    "max retries reached");
             return false;
         }
 
@@ -90,7 +89,7 @@ public class RetryAnalyzer implements IRetryAnalyzer {
         // Check if this is a non-retryable application failure
         if (isNonRetryable(throwable)) {
             logDecision(testMethodName, throwable.getClass().getSimpleName(),
-                       currentRetryCount, "non-retryable application failure");
+                    currentRetryCount, "non-retryable application failure");
             return false;
         }
 
@@ -99,7 +98,7 @@ public class RetryAnalyzer implements IRetryAnalyzer {
             int newRetryCount = currentRetryCount + 1;
             retryCounts.put(invocationKey, newRetryCount);
             logDecision(testMethodName, throwable.getClass().getSimpleName(),
-                       newRetryCount, "retryable infrastructure issue");
+                    newRetryCount, "retryable infrastructure issue");
             return true;
         }
 
@@ -107,13 +106,12 @@ public class RetryAnalyzer implements IRetryAnalyzer {
         if (currentRetryCount == 0) {
             retryCounts.put(invocationKey, 1);
             logDecision(testMethodName, throwable.getClass().getSimpleName(),
-                       1, "unknown exception (retrying once)");
+                    1, "unknown exception (retrying once)");
             return true;
         }
 
-        // USE NEW LOGGER for the final failure of an unknown exception
         logFailure(testMethodName, throwable.getClass().getSimpleName(),
-                  "unknown exception and max retries reached");
+                "unknown exception and max retries reached");
         return false;
     }
 
@@ -146,7 +144,8 @@ public class RetryAnalyzer implements IRetryAnalyzer {
     }
 
     /**
-     * Generates a unique key for each test method invocation (handles DataProvider scenarios)
+     * Generates a unique key for each test method invocation (handles DataProvider
+     * scenarios)
      */
     private String getInvocationKey(ITestResult result) {
         ITestNGMethod method = result.getMethod();
@@ -162,7 +161,7 @@ public class RetryAnalyzer implements IRetryAnalyzer {
     private void logDecision(String testMethod, String exceptionType, int attemptCount, String reason) {
         String status = attemptCount > 0 ? "🔄 RETRY" : "🔴 SKIP";
         logger.info("[{}] {} - {} ({}, attempt {}/{})",
-            testMethod, reason, exceptionType, status, attemptCount + 1, maxRetryCount + 1);
+                testMethod, reason, exceptionType, status, attemptCount + 1, maxRetryCount + 1);
     }
 
     /**

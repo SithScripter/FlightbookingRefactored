@@ -53,7 +53,7 @@
 **/node_modules/
 
 # =======================================================
-# Test Framework Specific Output (ADDED)
+# Test Framework Specific Output
 # =======================================================
 /logs/
 /reports/

@@ -24,13 +24,10 @@ import com.demo.flightbooking.utils.ExtentManager;
 public class TestListener implements ITestListener, IAnnotationTransformer {
 
 	@Override
-	@SuppressWarnings({ "rawtypes"})
+	@SuppressWarnings({ "rawtypes" })
 	public void transform(ITestAnnotation annotation, Class testClass, Constructor testConstructor, Method testMethod) {
-	    annotation.setRetryAnalyzer(RetryAnalyzer.class);
+		annotation.setRetryAnalyzer(RetryAnalyzer.class);
 	}
-
-
-	// ... other onTestStart, onTestSuccess methods remain the same
 
 	@Override
 	public void onTestStart(ITestResult result) {
@@ -54,12 +51,13 @@ public class TestListener implements ITestListener, IAnnotationTransformer {
 		if (result.getMethod().getRetryAnalyzer(result) != null) {
 			try {
 				// Get the retry analyzer from our RetryAnalyzer class
-				com.demo.flightbooking.listeners.RetryAnalyzer retryAnalyzer =
-					(com.demo.flightbooking.listeners.RetryAnalyzer) result.getMethod().getRetryAnalyzer(result);
+				com.demo.flightbooking.listeners.RetryAnalyzer retryAnalyzer = (com.demo.flightbooking.listeners.RetryAnalyzer) result
+						.getMethod().getRetryAnalyzer(result);
 
 				// If the analyzer will retry, suppress this failure report AND screenshot
 				if (retryAnalyzer.retry(result)) {
-					// Don't log to ExtentReports for intermediate failures AND don't capture screenshot
+					// Don't log to ExtentReports for intermediate failures AND don't capture
+					// screenshot
 					return; // Exit early - don't process this failure at all
 				}
 			} catch (ClassCastException e) {
@@ -77,8 +75,7 @@ public class TestListener implements ITestListener, IAnnotationTransformer {
 		try {
 			WebDriver driver = DriverManager.getDriver(); // use thread-local driver
 			if (driver != null) {
-				String screenshotPath =
-						ScreenshotUtils.captureScreenshot(driver, result.getMethod().getMethodName());
+				String screenshotPath = ScreenshotUtils.captureScreenshot(driver, result.getMethod().getMethodName());
 				if (test != null) {
 					test.addScreenCaptureFromPath("../screenshots/" + new java.io.File(screenshotPath).getName());
 				}
