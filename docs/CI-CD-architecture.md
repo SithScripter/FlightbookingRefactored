@@ -2,15 +2,15 @@
 
 ## 1. Overview
 
-This project uses a **fully containerized, Infrastructure-as-Code CI/CD setup** to execute Selenium + TestNG automation reliably across environments and browsers.
+This project uses a **Dockerized CI/CD setup with configuration-as-code** to execute Selenium + TestNG automation reliably across environments and browsers.
 
 Key principles:
 
-* **Everything as code** (pipeline, Jenkins config, infra)
+* **Configuration as code** (pipeline, Jenkins config, Docker)
 * **Reproducible builds** using Docker
 * **Fast execution** via pre-warmed build agents
 * **Scalable parallel testing** with Selenium Grid
-* **Production-grade observability & reporting**
+* **Structured reporting & notifications**
 
 ## 2. Quick Start
 
@@ -238,12 +238,12 @@ Two layered Docker images:
 
 ---
 
-## 12. Why This Design (Interview Summary)
+## 12. Design Principles & Benefits
 
 * **Scalable:** Parallel browsers, isolated containers
 * **Reliable:** Thread-safe execution, deterministic builds
 * **Maintainable:** Shared libraries, clean separation of concerns
-* **Production-ready:** Docker, JCasC, IaC principles
+* **Production-style:** Docker, JCasC, IaC principles
 * **Extensible:** Easy move to Kubernetes, cloud agents, enhanced observability
 
 ---
@@ -282,4 +282,4 @@ Automated validation of test results to prevent broken code from progressing thr
 
 ---
 
-✅ **This CI/CD setup is designed to demonstrate senior-level QA + DevOps maturity, not just test execution.**
+✅ **This CI/CD setup implements senior-level QA + DevOps best practices with professional-grade tooling.**

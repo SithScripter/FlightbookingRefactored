@@ -1,6 +1,6 @@
 # ✈️ Flight Booking Automation Framework
 
-A robust Selenium test automation framework designed for end-to-end testing of the BlazeDemo flight booking application. Built with **enterprise-grade patterns** for scalability, maintainability, and ease of use.
+A robust Selenium test automation framework designed for end-to-end testing of the BlazeDemo flight booking application. Built with **industry-standard patterns** for scalability, maintainability, and ease of use.
 
 ## ✨ Features
 
@@ -128,5 +128,3 @@ This repository intentionally separates **architectural intent** from **executio
 ## 📝 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-This project is intended as a **reference implementation** for enterprise-grade test automation.
