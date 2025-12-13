@@ -17,11 +17,16 @@ import java.util.stream.Collectors;
  */
 public class HomePage extends BasePage { // Extend BasePage
 
+    // Locators
+    private By departFromDropdown = By.name("fromPort");
+    private By arriveAtDropdown = By.name("toPort");
+    private By findFlightsButton = By.cssSelector("input[type='submit']");
+
     private WebDriverUtils webDriverUtils;
 
     /**
      * Constructor for the HomePage.
-     * 
+     *
      * @param driver The WebDriver instance.
      */
     public HomePage(WebDriver driver) {
