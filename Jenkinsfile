@@ -11,6 +11,12 @@ pipeline {
 
     options {
         skipDefaultCheckout()
+        durabilityHint('PERFORMANCE_OPTIMIZED')  // Reduce Pipeline metadata overhead
+        buildDiscarder(logRotator(
+            numToKeepStr: '5',                   // Keep only last 5 builds
+            artifactNumToKeepStr: '0'            // Don't keep archived artifacts
+        ))
+        disableConcurrentBuilds()                // Prevent build conflicts
     }
 
     triggers {
