@@ -1,4 +1,4 @@
-@Library('my-automation-library') _
+@Library('my-automation-library@v1.0.0') _
 
 def branchConfig = getBranchConfig()
 
@@ -9,15 +9,19 @@ pipeline {
         NETWORK_NAME = "selenium-grid-${env.BRANCH_NAME}".replaceAll('[^a-zA-Z0-9_.-]', '_')
     }
 
-    options {
-        skipDefaultCheckout()
-        durabilityHint('PERFORMANCE_OPTIMIZED')  // Reduce Pipeline metadata overhead
-        buildDiscarder(logRotator(
-            numToKeepStr: '5',                   // Keep only last 5 builds
-            artifactNumToKeepStr: '0'            // Don't keep archived artifacts
-        ))
-        disableConcurrentBuilds()                // Prevent build conflicts
-    }
+options {
+    skipDefaultCheckout()
+    durabilityHint(
+        env.BRANCH_NAME in ['main'] ?
+        'SURVIVABLE_NONATOMIC' :      // Production: safety + speed balance
+        'PERFORMANCE_OPTIMIZED'        // Features: maximum speed
+    )
+    buildDiscarder(logRotator(
+        numToKeepStr: '5',
+        artifactNumToKeepStr: '0'
+    ))
+    disableConcurrentBuilds()
+}
 
     triggers {
         cron('H 2 * * *')
