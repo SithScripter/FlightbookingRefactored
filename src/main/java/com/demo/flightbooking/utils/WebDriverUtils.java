@@ -237,8 +237,4 @@ public class WebDriverUtils {
         }
     }
 
-    // You can add more utility methods here, e.g.,
-    // public void scrollIntoView(By locator) { ... }
-    // public void handleAlert() { ... }
-    // public void switchToFrame(By locator) { ... }
 }
