@@ -70,7 +70,34 @@ The pipeline ensures that all resources are properly shut down after every run, 
 - Docker container removal
 - Jenkins workspace cleanup
 
-## 4. The Build Environment
+## 4. Performance Optimizations
+
+The pipeline includes several performance enhancements to balance speed and reliability:
+
+### Pipeline Durability
+
+**Conditional durability settings:**
+- **Main branch:** `SURVIVABLE_NONATOMIC` - Balance of crash recovery and performance
+- **Feature branches:** `PERFORMANCE_OPTIMIZED` - Maximum speed, minimal metadata overhead
+
+**Trade-off:** Feature builds cannot resume after crash but execute 20-30% faster. Acceptable since re-runs are cheap for CI tests.
+
+### Build Retention
+
+**Automatic cleanup:**
+- Keeps last 5 builds per branch
+- Archives 0 artifacts (reports published to Jenkins UI only)
+- HTML reports: `keepAll=false` (only latest retained)
+
+**Result:** Build metadata stays under 1MB per build (down from 4-5MB), preventing UI slowdown.
+
+### Other Optimizations
+
+- **disableConcurrentBuilds**: Prevents resource conflicts with Selenium Grid
+- **JVM heap sizing**: 3GB with G1GC for stable performance with 398 plugins
+- **grpcfuse isolation**: Config-as-Code mounted outside `/var/jenkins_home` for reduced filesystem latency
+
+## 5. The Build Environment
 
 ### Docker Agent & Caching
 

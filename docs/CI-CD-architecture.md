@@ -93,6 +93,12 @@ Reports + Dashboards + Notifications
 
 Reusable pipeline logic is extracted into shared library functions:
 
+**Versioning Strategy:**
+- Production Jenkinsfile uses: `@Library('my-automation-library@v1.0.0') _`
+- Feature branches can test latest: `@Library('my-automation-library@main') _`
+- Shared library is versioned using semantic versioning (vMAJOR.MINOR.PATCH)
+- Tags ensure deterministic builds and instant rollback capability
+
 | Function                  | Responsibility                                  |
 | ------------------------- | ----------------------------------------------- |
 | `getBranchConfig()`       | Branch policies (main, feature, prod-candidate) |
@@ -235,6 +241,36 @@ Two layered Docker images:
 | Secrets         | Externalized (not in repo)    |
 | Environments    | QA / Staging / Production     |
 | Branch behavior | Controlled via shared library |
+
+---
+
+## 11. Jenkins UI & Monitoring
+
+### Blue Ocean UI (Recommended for Daily Use)
+
+**URL:** `http://localhost:8086/blue`
+
+**Advantages:**
+- 10x faster build history loading (lazy-loading architecture)
+- Modern Pipeline visualization with stage-by-stage view
+- Better suited for MultiBranch Pipeline navigation
+- Asynchronous data fetching prevents UI freezing
+
+**Use Blue Ocean for:**
+- Build execution monitoring
+- Test result viewing
+- Pipeline visualization
+- Build history browsing
+
+### Classic UI (Administration)
+
+**URL:** `http://localhost:8086`
+
+**Use Classic UI for:**
+- Job configuration
+- System settings and plugin management
+- MultiBranch scan logs (not available in Blue Ocean)
+- Script Console and troubleshooting
 
 ---
 

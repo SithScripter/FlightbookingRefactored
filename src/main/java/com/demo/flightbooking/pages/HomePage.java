@@ -8,7 +8,6 @@ import com.demo.flightbooking.utils.ConfigReader;
 import com.demo.flightbooking.utils.WebDriverUtils;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * Represents the Home Page of the BlazeDemo application.
@@ -46,7 +45,7 @@ public class HomePage extends BasePage { // Extend BasePage
         Select select = new Select(departFromElement);
         return select.getOptions().stream()
                 .map(WebElement::getText)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     /**
@@ -70,7 +69,7 @@ public class HomePage extends BasePage { // Extend BasePage
         Select select = new Select(arriveAtElement);
         return select.getOptions().stream()
                 .map(WebElement::getText)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     /**
@@ -95,8 +94,8 @@ public class HomePage extends BasePage { // Extend BasePage
      * Selects the departure and destination cities from the dropdowns and
      * submits the form to find available flights.
      *
-     * @param origin      The city of departure (e.g., "Boston").
-     * @param destination The city of arrival (e.g., "London").
+     * @param departCity      The city of departure (e.g., "Boston").
+     * @param arriveCity The city of arrival (e.g., "London").
      */
     public void findFlights(String departCity, String arriveCity) {
         logger.info("Performing flight search from {} to {}.", departCity, arriveCity);
