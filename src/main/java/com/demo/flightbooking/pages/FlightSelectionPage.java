@@ -44,8 +44,8 @@ public class FlightSelectionPage extends BasePage {
      */
     public void clickChooseFlightButton() {
         logger.info("Clicking Choose This Flight button.");
-        WebDriverUtils.waitForPageLoad(driver, Duration.ofSeconds(10));
-        WebDriverUtils.click(driver, chooseFlightButton, Duration.ofSeconds(10));
+        webDriverUtils.waitForPageLoad();
+        webDriverUtils.click(chooseFlightButton);
         logger.info("Choose Flight button clicked.");
     }
 

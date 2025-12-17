@@ -210,6 +210,10 @@ public class WebDriverUtils {
         }
     }
 
+    public void waitForPageLoad() {
+        wait.until(d -> "complete".equals(((JavascriptExecutor) driver).executeScript("return document.readyState")));
+    }
+
     public static void waitForPageLoad(WebDriver driver, Duration timeout) {
         new WebDriverWait(driver, timeout)
                 .until(d -> "complete".equals(((JavascriptExecutor) d).executeScript("return document.readyState")));
