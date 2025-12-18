@@ -81,6 +81,10 @@
   - ScreenshotUtils: Screenshot capture and management
   - WebDriverUtils: WebDriver helper methods and utilities
 
+WebDriverUtils follows an instance-based interaction model.
+Page Objects delegate all waits and interactions to WebDriverUtils,
+ensuring centralized timeout control via configuration.
+
 ## Design Patterns
 
 ### 1. Page Object Model (POM)
