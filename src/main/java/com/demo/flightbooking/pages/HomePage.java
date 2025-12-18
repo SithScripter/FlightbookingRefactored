@@ -65,7 +65,7 @@ public class HomePage extends BasePage { // Extend BasePage
      */
     public List<String> getAvailableArriveCities() {
         logger.debug("Getting available arrival cities.");
-        WebElement arriveAtElement = webDriverUtils.findElement(arriveAtDropdown); // Use WebDriverUtils
+        WebElement arriveAtElement = webDriverUtils.findElement(arriveAtDropdown);
         Select select = new Select(arriveAtElement);
         return select.getOptions().stream()
                 .map(WebElement::getText)
