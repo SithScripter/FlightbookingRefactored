@@ -117,27 +117,17 @@ The pre-warmed Docker image must be rebuilt to keep the cache up to date. Rebuil
 ### Running Tests Locally
 
 ```bash
-# Run the default (smoke) test suite
-mvn clean test
+# Run the default (smoke) test suite on default chrome browser
+mvn clean test -Dselenium.grid.enabled=false
 
 # Run the regression suite by activating its profile
-mvn clean test -P regression
+mvn clean test -P regression -Dselenium.grid.enabled=false
 
 # Run a specific TestNG group (e.g., 'smoke')
-mvn clean test -Dgroups=smoke
+mvn clean test -Dgroups=smoke -Dselenium.grid.enabled=false
 
 # Run with a specific browser
-mvn clean test -Dbrowser=firefox
-```
-
-### Starting the Selenium Grid
-
-```bash
-# Start the Selenium Grid in the background
-docker-compose -f docker-compose-grid.yml up -d
-
-# Shut down the Grid when finished
-docker-compose -f docker-compose-grid.yml down
+mvn clean test -Dbrowser=firefox -Dselenium.grid.enabled=false
 ```
 
 ## 7. Dependencies & Prerequisites
