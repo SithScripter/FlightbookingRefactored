@@ -112,7 +112,7 @@ The pre-warmed Docker image must be rebuilt to keep the cache up to date. Rebuil
 2. Changing system-level tools in the base Dockerfile.
 3. Updating the base Maven/Java image version.
 
-## 5. Local Development
+## 6. Local Development
 
 ### Running Tests Locally
 
@@ -140,7 +140,7 @@ docker-compose -f docker-compose-grid.yml up -d
 docker-compose -f docker-compose-grid.yml down
 ```
 
-## 6. Dependencies & Prerequisites
+## 7. Dependencies & Prerequisites
 
 ### Shared Library
 
@@ -154,7 +154,7 @@ The following credential IDs must be configured in Jenkins for the pipeline to f
 - `qase-api-token`: API token for updating test results in Qase.
 - `recipient-email-list`: The distribution list for email notifications.
 
-## 7. Troubleshooting
+## 8. Troubleshooting
 
 ### Common Issues
 
@@ -194,7 +194,7 @@ The following credential IDs must be configured in Jenkins for the pipeline to f
 - **Build History**: Check Jenkins build history.
 - **Logs**: Access detailed execution logs in Jenkins.
 
-## 8. Best Practices
+## 9. Best Practices
 
 1. **Keep the Pre-warmed Image Up to Date**: Always rebuild the image after `pom.xml` dependency changes.
 2. **Run Tests Locally First**: Catch issues early before pushing code.
