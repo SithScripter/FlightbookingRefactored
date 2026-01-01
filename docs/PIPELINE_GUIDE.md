@@ -139,10 +139,11 @@ The pipeline relies on a Jenkins Shared Library for reusable functions.
 
 ### Required Jenkins Credentials
 
-The following credential IDs must be configured in Jenkins for the pipeline to function correctly:
+The following credential IDs must be available in Jenkins for the pipeline to function correctly
+(these are provisioned centrally via Jenkins Configuration as Code):
 
-- `qase-api-token`: API token for updating test results in Qase.
-- `recipient-email-list`: The distribution list for email notifications.
+- `qase-api-token`: API token for publishing test results to Qase.
+- `recipient-email-list`: Distribution list used for pipeline notifications.
 
 ## 8. Troubleshooting
 
