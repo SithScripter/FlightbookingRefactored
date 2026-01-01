@@ -16,6 +16,7 @@ public class PurchasePage extends BasePage {
 
     // WebDriverUtils for robust element interactions
     private final WebDriverUtils webDriverUtils;
+    // --- Locators ---
     private final By firstNameInput = By.id("inputName");
     private final By addressInput = By.id("address");
     private final By cityInput = By.id("city");

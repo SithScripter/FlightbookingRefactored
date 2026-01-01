@@ -14,10 +14,10 @@ This document outlines the policies, behaviors, and operational procedures for t
 
 ### Build Failure Conditions
 
-- **FAILURE (Red)**: The build is immediately stopped and marked as failed. This occurs when:
-  - A critical infrastructure or script error occurs in any stage.
-  - Any test fails when run on a protected branch (main, enhancements).
-- **UNSTABLE (Yellow)**: The build completes all stages, but one or more tests have failed. This is the expected outcome for test failures on feature branches.
+- **FAILURE (Red)**: The build is marked as failed. This occurs when:
+  - A critical infrastructure or script error occurs in any stage (build stops immediately).
+  - Test failures exceed the quality gate threshold on a protected branch (main, enhancements), after all tests complete.
+- **UNSTABLE (Yellow)**: The build completes all stages, but test failures exceed the configured quality gate threshold on feature branches. This allows development to continue while clearly surfacing test issues.
 
 ### Test Execution Strategy
 
@@ -94,8 +94,7 @@ The pipeline includes several performance enhancements to balance speed and reli
 ### Other Optimizations
 
 - **disableConcurrentBuilds**: Prevents resource conflicts with Selenium Grid
-- **JVM heap sizing**: 3GB with G1GC for stable performance with 398 plugins
-- **grpcfuse isolation**: Config-as-Code mounted outside `/var/jenkins_home` for reduced filesystem latency
+- **JVM heap sizing**: 3GB with G1GC for stable performance with ~400 plugins
 
 ## 5. The Build Environment
 

@@ -85,7 +85,7 @@ For debugging, tests can also be run directly from the IDE with:
 
 After test execution, detailed HTML reports are available in:
 - `reports/{browser}/` - Individual test run reports
-- `test-output/` - TestNG reports and logs
+- `target/surefire-reports/` - TestNG reports and logs
 
 Reports are generated **per browser execution** and aggregated in CI.
 

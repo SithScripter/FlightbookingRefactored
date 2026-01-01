@@ -17,11 +17,11 @@ import java.util.List;
 public class HomePage extends BasePage { // Extend BasePage
 
     // Locators
-    private By departFromDropdown = By.name("fromPort");
-    private By arriveAtDropdown = By.name("toPort");
-    private By findFlightsButton = By.cssSelector("input[type='submit']");
+    private final By departFromDropdown = By.name("fromPort");
+    private final By arriveAtDropdown = By.name("toPort");
+    private final By findFlightsButton = By.cssSelector("input[type='submit']");
 
-    private WebDriverUtils webDriverUtils;
+    private final WebDriverUtils webDriverUtils;
 
     /**
      * Constructor for the HomePage.
