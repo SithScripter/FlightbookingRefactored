@@ -165,7 +165,7 @@ The following credential IDs must be available in Jenkins for the pipeline to fu
 
 - **Symptom**: The build is marked as `FAILURE` when tests fail on `main` or `enhancements`.
 - **Explanation**: This is by design to enforce quality on protected branches.
-- **Action**: Fix the failing tests in your feature branch before merging.
+- **Action**: Fix the failing tests in feature branch before merging.
 
 #### 4. Random Docker/Network Errors
 
@@ -191,5 +191,5 @@ The following credential IDs must be available in Jenkins for the pipeline to fu
 2. **Run Tests Locally First**: Catch issues early before pushing code.
 3. **Rebase Feature Branches Regularly**: Keep branches updated to avoid large merge conflicts.
 4. **Monitor Test Flakiness**: Investigate and fix tests that fail intermittently.
-5. **Use Meaningful Commit Messages**: Clearly explain the "what" and the "why" of your changes.
+5. **Use Meaningful Commit Messages**: Clearly explain the "what" and the "why" of changes.
 6. **Document Significant Changes**: Update this guide when making major changes to the pipeline or framework.
