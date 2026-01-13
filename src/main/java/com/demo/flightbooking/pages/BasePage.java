@@ -21,7 +21,7 @@ public abstract class BasePage {
     protected final Logger logger; // Logger for each page object
 
     private static final int DEFAULT_TIMEOUT = 10; // Default timeout if not specified in config
-    
+
     /**
      * Constructor for the BasePage.
      * It initializes the WebDriver and WebDriverWait for the page, and it also
@@ -30,7 +30,7 @@ public abstract class BasePage {
      * @param driver The WebDriver instance to be used by the page.
      */
 
-    public BasePage(WebDriver driver) {
+    protected BasePage(WebDriver driver) {
         this.driver = driver;
         // Initialize logger with the specific class name of the concrete page object
         this.logger = LogManager.getLogger(this.getClass());
@@ -39,12 +39,14 @@ public abstract class BasePage {
         int timeoutSeconds = ConfigReader.getPropertyAsInt("test.timeout");
         if (timeoutSeconds <= 0) {
             timeoutSeconds = DEFAULT_TIMEOUT; // Use default if config value is invalid or not found
-            logger.warn("Invalid or missing 'test.timeout' in config.properties. Using default timeout: {} seconds.", DEFAULT_TIMEOUT);
+            logger.warn("Invalid or missing 'test.timeout' in config.properties. Using default timeout: {} seconds.",
+                    DEFAULT_TIMEOUT);
         }
         this.wait = new WebDriverWait(driver, Duration.ofSeconds(timeoutSeconds));
 
         // Initialize PageFactory elements (if using @FindBy annotations)
-        // PageFactory.initElements(driver, this); // Uncomment if you plan to use @FindBy
+        // PageFactory.initElements(driver, this); // Uncomment if you plan to use
+        // @FindBy
     }
 
     /**
@@ -58,13 +60,11 @@ public abstract class BasePage {
 
     /**
      * Get the current URL.
+     *
      * @return The current URL.
      */
     public String getCurrentUrl() {
         return driver.getCurrentUrl();
     }
 
-    // You can add more common methods here, e.g.,
-    // public void navigateTo(String url) { driver.get(url); }
-    // public boolean isElementPresent(By locator) { ... }
 }

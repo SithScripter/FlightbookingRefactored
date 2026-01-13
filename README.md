@@ -1,62 +1,93 @@
 # ✈️ Flight Booking Automation Framework
 
-A robust Selenium test automation framework designed for end-to-end testing of the BlazeDemo flight booking application. Built with industry best practices for scalability, maintainability, and ease of use.
+A robust Selenium test automation framework designed for end-to-end testing of the BlazeDemo flight booking application. Built with **industry-standard patterns** for scalability, maintainability, and ease of use.
 
 ## ✨ Features
 
-* **Page Object Model (POM)**: Clean separation of UI elements from test logic
-* **Data-Driven Testing**: External test data management using JSON and CSV formats
-* **Cross-Browser Testing**: Supports Chrome and Firefox in headless mode
-* **Parallel Execution**: TestNG-powered parallel test execution across multiple browsers
-* **Dockerized Grid**: Pre-configured Selenium Grid for consistent test environments
-* **Multi-Environment Support**: Configurable testing across QA, Staging, and Production environments
-* **CI/CD Ready**: Jenkins pipeline integration with parallel test execution and automated reporting
-* **Rich Reporting**: ExtentReports with detailed test results, screenshots, and custom dashboards
-* **Modular Design**: Clean architecture with separate layers for pages, tests, and utilities
-* **Retry Mechanisms**: Built-in test retry logic with configurable retry counts
-* **Comprehensive Logging**: Log4j2 integration with structured logging and configurable log levels
+### Core Framework
+- Page Object Model (POM) with composition pattern
+- Modular layered architecture (Infrastructure → Domain → Test)
+- Centralized WebDriver utilities with instance-based interaction model
+- Configuration-driven wait and timeout strategy (no hardcoded waits in Page Objects)
+- Comprehensive Log4j2 logging with MDC context
+
+### Testing Capabilities
+- Data-driven testing (JSON, CSV, DataFaker)
+- Cross-browser execution with parallelization where applicable
+- Intelligent retry mechanism for transient failures
+
+### Execution & Infrastructure
+- Dockerized Selenium Grid with isolated networks
+- Multi-environment execution (QA/Staging/Production)
+- Jenkins CI/CD ready with shared library patterns
+
+### Reporting & Quality Gates
+- ExtentReports with screenshots and timelines
+- Consolidated HTML dashboards in CI/CD
+- Automated quality gates with configurable thresholds
+- Failure aggregation and smart notifications
 
 ## 🚀 Getting Started
 
+This section covers **local and CI-style execution**. For CI/CD internals and architecture, see the documentation links below.
+
 ### Prerequisites
 
-* Java 21+
-* Apache Maven 3.8+
-* Docker Desktop (for grid execution)
+- Java 21+
+- Apache Maven 3.8+
+- Docker Desktop (for grid execution)
 
 ### How to Run Tests
 
-#### 1. Local Execution
+The framework supports two primary modes of execution: running tests locally on your machine for development and debugging, and running them against a Dockerized Selenium Grid for CI/CD or comprehensive cross-browser testing.
+
+> These commands mirror how the framework executes inside Jenkins CI.
+
+#### 1. Running from the Command Line (using Maven)
+
+This is the recommended approach for running full test suites. These commands reflect **how the framework is executed in CI**, with local overrides for development.
+
+**A) Local Execution (No Docker Grid)**
+
+This mode uses WebDriverManager to automatically manage browser drivers on your local machine. It's perfect for quick feedback during development.
 
 ```bash
-# Run smoke tests on local Chrome
+# Run the smoke suite on your local Chrome browser
 mvn clean test -P smoke -Dselenium.grid.enabled=false
 
-# Run regression tests on local Firefox
+# Run the regression suite on your local Firefox browser
 mvn clean test -P regression -Dbrowser=firefox -Dselenium.grid.enabled=false
 ```
 
-#### 2. Dockerized Selenium Grid
+**B) Dockerized Selenium Grid Execution**
+
+This mode is used by the CI/CD pipeline and is ideal for running the full regression suite across multiple browsers in parallel.
 
 ```bash
-# Start the Selenium Grid
+# 1. Start the Selenium Grid in the background
 docker-compose -f docker-compose-grid.yml up -d
 
-# Run tests against the grid
+# 2. Run the smoke suite against the grid (defaults to Chrome)
 mvn clean test -P smoke -Dselenium.grid.enabled=true
 
-# Run regression tests on the grid with parallel execution
-mvn clean test -P regression -Dselenium.grid.enabled=true
-
-# Shut down the grid when finished
+# 3. Shut down the grid when you're finished
 docker-compose -f docker-compose-grid.yml down
+```
+
+#### 2. Running from an IDE (e.g., IntelliJ, Eclipse)
+
+For debugging, tests can also be run directly from the IDE with:
+```
+-Dselenium.grid.enabled=false
 ```
 
 ## 📊 Test Reports
 
 After test execution, detailed HTML reports are available in:
 - `reports/{browser}/` - Individual test run reports
-- `test-output/` - TestNG reports and logs
+- `target/surefire-reports/` - TestNG reports and logs
+
+Reports are generated **per browser execution** and aggregated in CI.
 
 ## 🔧 Configuration
 
@@ -66,26 +97,36 @@ Edit `src/test/resources/config/config.properties` to configure:
 - Timeouts and retry configurations
 - Reporting preferences and tester information
 
+Configuration is externalized to support non-code environment changes in CI/CD.
+
 ### Test Data Formats
 
 The framework supports multiple test data formats:
 - **JSON**: Structured test data in `src/test/resources/testdata/` directory
 - **CSV**: Tabular test data for data-driven scenarios
-- **Programmatic**: Dynamic test data generation using Builder and Factory patterns
+- **DataFaker**: Dynamic, seeded test data generation for realistic and reproducible negative testing
 
 ### Test Suites
 
 - **Smoke Suite**: Quick validation tests (`testng-smoke.xml`)
 - **Regression Suite**: Comprehensive test coverage (`testng-regression.xml`)
 
-## Project Documentation
+## 📚 Architecture & CI/CD Documentation
 
-For a deeper look into the framework's design and CI/CD process, please see the following guides:
-- **[Architecture Guide](docs/ARCHITECTURE.md)**: An overview of the framework's layers and design patterns.
-- **[Pipeline Guide](docs/PIPELINE_GUIDE.md)**: A detailed explanation of the Jenkins CI/CD pipeline, its features, and operational policies.
+This repository intentionally separates **architectural intent** from **execution behavior**.
+
+> Start with **CI-CD-architecture.md** for the big picture, then refer to **PIPELINE_GUIDE.md** for execution details.
+
+- **[CI-CD-architecture.md](docs/CI-CD-architecture.md)**  
+  High-level CI/CD design — infrastructure, Docker strategy, JCasC, Selenium Grid, and integrations.
+
+- **[PIPELINE_GUIDE.md](docs/PIPELINE_GUIDE.md)**  
+  Operational truth — Jenkins pipeline behavior, branch policies, parameters, and execution flow.
+
+- **[ARCHITECTURE.md](docs/ARCHITECTURE.md)**  
+  Framework-level design — layers, patterns, and test architecture.
+
 
 ## 📝 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-Happy Testing! 🧪🚀

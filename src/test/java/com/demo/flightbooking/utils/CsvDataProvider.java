@@ -1,6 +1,7 @@
 package com.demo.flightbooking.utils;
 
 import com.demo.flightbooking.model.Passenger;
+import com.demo.flightbooking.utils.ConfigReader;
 import org.testng.annotations.DataProvider;
 
 import java.io.BufferedReader;
@@ -15,8 +16,7 @@ import java.util.List;
  */
 public class CsvDataProvider {
 
-//    private static final String CSV_FILE = "testdata/passenger-data.csv";
-	private static final String CSV_FILE = ConfigReader.getProperty("data.file.passengers.csv");
+    private static final String CSV_FILE = ConfigReader.getProperty("data.file.passengers.csv");
 
     /**
      * TestNG DataProvider method that reads passenger data from a CSV file.
@@ -28,7 +28,6 @@ public class CsvDataProvider {
     public Object[][] provideCsvData() throws Exception {
         List<Passenger> passengerList = new ArrayList<>();
 
-        // This part remains the same: reading the file and creating a list of Passenger records
         InputStream is = getClass().getClassLoader().getResourceAsStream(CSV_FILE);
         if (is == null) {
             throw new RuntimeException("CSV file not found on classpath: " + CSV_FILE);
@@ -71,12 +70,45 @@ public class CsvDataProvider {
             }
         }
 
-        // --- CHANGE: From a 'for' loop to a Java Stream ---
-        // The old 'for' loop that converted the List into Object[][] has been replaced.
-        // This new approach is more declarative and concise.
+        Object[][] result = new Object[passengerList.size()][1];
+        for (int i = 0; i < passengerList.size(); i++) {
+            result[i][0] = passengerList.get(i);
+        }
+        return result;
+    }
 
-        return passengerList.stream()                // 1. Create a stream of Passenger objects.
-            .map(passenger -> new Object[]{passenger})  // 2. For each passenger, transform it into a new Object array containing just that passenger.
-            .toArray(Object[][]::new);                 // 3. Collect all the Object arrays into a final 2D Object array that TestNG can use.
+    /**
+     * TestNG DataProvider method that reads route data from routes.csv.
+     * Provides departure and destination cities for flight search tests.
+     *
+     * @return A 2D Object array where each inner array contains departureCity and destinationCity.
+     */
+    @DataProvider(name = "routesData")
+    public Object[][] provideRoutesData() throws Exception {
+        List<Object[]> routes = new ArrayList<>();
+
+        InputStream is = getClass().getClassLoader().getResourceAsStream("testdata/routes.csv");
+        if (is == null) {
+            throw new RuntimeException("CSV file not found on classpath: testdata/routes.csv");
+        }
+
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(is))) {
+            String line;
+            boolean skipHeader = true;
+
+            while ((line = reader.readLine()) != null) {
+                if (skipHeader) {
+                    skipHeader = false;
+                    continue;
+                }
+
+                String[] fields = line.split(",", -1);
+                if (fields.length >= 2) {
+                    routes.add(new Object[]{fields[0].trim(), fields[1].trim()});
+                }
+            }
+        }
+
+        return routes.toArray(new Object[0][]);
     }
 }

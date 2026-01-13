@@ -22,8 +22,10 @@ import org.openqa.selenium.firefox.FirefoxOptions;
 import org.openqa.selenium.remote.RemoteWebDriver;
 
 /**
- * Manages the WebDriver instance in a thread-safe manner for parallel test execution.
- * This class ensures that each test thread gets its own separate WebDriver instance,
+ * Manages the WebDriver instance in a thread-safe manner for parallel test
+ * execution.
+ * This class ensures that each test thread gets its own separate WebDriver
+ * instance,
  * preventing conflicts and instability during parallel runs.
  */
 public class DriverManager {
@@ -44,11 +46,12 @@ public class DriverManager {
     public static String getBrowser() {
         return browserName.get();
     }
-    
+
     /**
      * Retrieves the WebDriver instance for the current thread.
      * If an instance does not exist, it creates a new one based on the
-     * configuration in config.properties (e.g., browser type, grid enabled, headless mode).
+     * configuration in config.properties (e.g., browser type, grid enabled,
+     * headless mode).
      *
      * @return The WebDriver instance for the current thread.
      */
@@ -58,26 +61,19 @@ public class DriverManager {
                     ? browserName.get()
                     : ConfigReader.getProperty("browser");
 
-            // ✅ Load browser type from config or testng.xml
             BrowserType browserType = BrowserType.valueOf(browser.toUpperCase());
-
-            // ✅ Read headless flag from config.properties
-            boolean isHeadless = Boolean.parseBoolean(ConfigReader.getProperty("browser.headless"));
+            boolean isHeadless = Boolean.parseBoolean(ConfigReader.getProperty("browser.headless", "true"));
             logger.info("Headless mode enabled? {}", isHeadless);
-
-            // ✅ Read Grid toggle
-            boolean useGrid = Boolean.parseBoolean(ConfigReader.getProperty("selenium.grid.enabled"));
+            boolean useGrid = Boolean.parseBoolean(ConfigReader.getProperty("selenium.grid.enabled", "true"));
             logger.info("Grid enabled? {}", useGrid);
             logger.info("Execution mode: {}", useGrid ? "REMOTE (Grid)" : "LOCAL");
             logger.info("Initializing {} driver for thread: {}", browserType, Thread.currentThread().threadId());
-
-            // ✅ Fetch browser-specific options with headless flag
             MutableCapabilities options = BrowserOptionsFactory.getOptions(browserType, isHeadless);
 
             if (useGrid) {
                 try {
                     // Validate required properties
-                    String hubHost = ConfigReader.getProperty("selenium.hubHost");
+                    String hubHost = ConfigReader.getProperty("selenium.hubHost", "selenium-hub");
                     String urlFormat = ConfigReader.getProperty("seleniumhub.urlFormat");
 
                     if (hubHost == null || hubHost.isEmpty()) {
@@ -115,15 +111,16 @@ public class DriverManager {
             }
 
             driver.get().manage().window().maximize();
-            driver.get().manage().timeouts().implicitlyWait(Duration.ofSeconds(0));
         }
 
         return driver.get();
     }
 
     /**
-     * Quits the WebDriver instance for the current thread and removes it from the ThreadLocal variable.
-     * This is crucial for cleaning up resources and preventing memory leaks after a test is complete.
+     * Quits the WebDriver instance for the current thread and removes it from the
+     * ThreadLocal variable.
+     * This is crucial for cleaning up resources and preventing memory leaks after a
+     * test is complete.
      */
     public static void quitDriver() {
         WebDriver wd = driver.get();
@@ -135,8 +132,7 @@ public class DriverManager {
                 logger.warn("quitDriver called but thread-local WebDriver was null.");
             }
         } finally {
-            // ADDED: Clear only browser MDC to prevent leakage, preserve suite MDC
-            ThreadContext.remove("browser"); // Instead of clearMap()
+            ThreadContext.remove("browser");
             driver.remove();
             browserName.remove();
         }

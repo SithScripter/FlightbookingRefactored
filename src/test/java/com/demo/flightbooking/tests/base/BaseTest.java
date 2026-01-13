@@ -38,31 +38,27 @@ public class BaseTest {
 
     protected static final Logger logger = LogManager.getLogger(BaseTest.class);
 
-    // Thread-safe report instance for parallel execution (each browser runs in isolated thread)
+    // Thread-safe report instance for parallel execution (each browser runs in
+    // isolated thread)
     private static final ThreadLocal<ExtentReports> extentReports = new ThreadLocal<>();
 
     // Shared list of failure summaries (thread-safe)
-    protected static final List<String> failureSummaries =
-            Collections.synchronizedList(new ArrayList<>());
+    protected static final List<String> failureSummaries = Collections.synchronizedList(new ArrayList<>());
 
-//     * This method runs once before the entire test suite.
-//     * It sets up the ExtentReports instance and configures the report's appearance.
-//     */
+    /**
+     * This method runs once before the entire test suite.
+     * It sets up the ExtentReports instance and configures the report's appearance.
+     */
     @BeforeSuite(alwaysRun = true)
     public void setUpSuite() {
-        // ✅ Use dynamic logger for consistency
         Logger suiteLogger = LogManager.getLogger(this.getClass());
-        
+
         File logsDir = new File("logs");
         if (!logsDir.exists()) {
             logsDir.mkdirs();
         }
         suiteLogger.info("✅ Logs directory ensured.");
-
-        // ✅ Read the suite name from the system property passed by Maven
         String suiteName = System.getProperty("test.suite", "default");
-
-        // ✅ Build the filename dynamically
         File oldSummary = new File("reports/" + suiteName + "-failure-summary.txt");
         if (oldSummary.exists()) {
             oldSummary.delete();
@@ -71,55 +67,58 @@ public class BaseTest {
     }
 
     /**
-     * ✅ Runs once per <test> tag in testng XML.
+     * Runs once per <test> tag in testng XML.
      * Creates a unique ExtentSparkReporter per browser/stage.
      */
-    @Parameters("browser")
     @BeforeClass(alwaysRun = true)
     public void setUpClass() {
-        // ✅ Use dynamic logger for consistency
-        Logger classLogger = LogManager.getLogger(this.getClass());
-        
-        // Get browser from system property (set by Jenkins Maven command)
-        String browser = System.getProperty("browser", "chrome").toUpperCase();
-        
-        // Determine suite and report directory (e.g., chrome or firefox)
-        String reportDir = System.getProperty("report.dir", browser.toLowerCase()); // fallback to browser
-        String suiteName = System.getProperty("test.suite", "default");
+        if (extentReports.get() == null) {
+            Logger classLogger = LogManager.getLogger(this.getClass());
 
-        String reportPath = "reports/" + reportDir + "/";
-        new File(reportPath).mkdirs(); // Ensure folder exists
+            // Get browser from system property (set by Jenkins Maven command)
+            String browser = System.getProperty("browser", "chrome").toUpperCase();
 
-        // 👇 File name like regression-chrome-report.html
-        String reportFileName = suiteName + "-" + reportDir + "-report.html";
+            // Determine suite and report directory (e.g., chrome or firefox)
+            String reportDir = System.getProperty("report.dir", browser.toLowerCase()); // fallback to browser
+            String suiteName = System.getProperty("test.suite", "default");
 
-        // Create and configure ExtentSparkReporter
-        ExtentSparkReporter sparkReporter = new ExtentSparkReporter(reportPath + reportFileName);
-        sparkReporter.config().setOfflineMode(true);
-        sparkReporter.config().setDocumentTitle("Test Report: " + suiteName.toUpperCase() + " - " + reportDir.toUpperCase());
+            String reportPath = "reports/" + reportDir + "/";
+            new File(reportPath).mkdirs(); // Ensure folder exists
 
-        // Create new ExtentReports and attach reporter
-        ExtentReports reports = new ExtentReports();
-        reports.attachReporter(sparkReporter);
-        reports.setSystemInfo("Tester", ConfigReader.getProperty("tester.name"));
-        reports.setSystemInfo("OS", System.getProperty("os.name"));
-        reports.setSystemInfo("Java Version", System.getProperty("java.version"));
-        extentReports.set(reports);
+            // 👇 File name like regression-chrome-report.html
+            String reportFileName = suiteName + "-" + reportDir + "-report.html";
 
-        classLogger.info("✅ Report will be generated at: {}/{}", reportPath, reportFileName);
+            // Create and configure ExtentSparkReporter
+            ExtentSparkReporter sparkReporter = new ExtentSparkReporter(reportPath + reportFileName);
+            sparkReporter.config().setOfflineMode(true);
+            sparkReporter.config()
+                    .setDocumentTitle("Test Report: " + suiteName.toUpperCase() + " - " + reportDir.toUpperCase());
+
+            // Create new ExtentReports and attach reporter
+            ExtentReports reports = new ExtentReports();
+            reports.attachReporter(sparkReporter);
+            reports.setSystemInfo("Tester", ConfigReader.getProperty("tester.name"));
+            reports.setSystemInfo("OS", System.getProperty("os.name"));
+            reports.setSystemInfo("Java Version", System.getProperty("java.version"));
+            extentReports.set(reports);
+
+            classLogger.info("✅ Report will be generated at: {}/{}", reportPath, reportFileName);
+        }
     }
 
     /**
      * This method runs before each test method.
-     * It initializes the WebDriver instance for the current thread and creates a new
+     * It initializes the WebDriver instance for the current thread and creates a
+     * new
      * test entry in the ExtentReport.
+     * 
      * @param method The test method that is about to be run.
      */
     @BeforeMethod(alwaysRun = true)
     public void setUp(Method method) {
         // ✅ ROBUST MDC: Set context for THIS test method's thread
         String mdcSuite = System.getProperty("test.suite", "unknown");
-        
+
         // Get browser from system property (set by Jenkins Maven command)
         String browser = System.getProperty("browser", "chrome").toUpperCase();
         String mdcBrowser = (browser != null && !browser.isBlank()) ? browser : "UNKNOWN";
@@ -133,10 +132,8 @@ public class BaseTest {
         ThreadContext.put("browser", mdcBrowser);
         ThreadContext.put("testname", method.getName());
 
-        // Set browser for current thread
         DriverManager.setBrowser(browser.toLowerCase());
-        
-        // ✅ Use logger after MDC is set so it picks up the context
+
         Logger methodLogger = LogManager.getLogger(this.getClass());
         methodLogger.info("✅ Browser set to: {} for test: {}", browser, method.getName());
 
@@ -147,51 +144,39 @@ public class BaseTest {
         methodLogger.info("📝 ExtentTest created for test: {} on {}", method.getName(), browserName);
     }
 
-    /**
-     * This method runs after each test method.
-     * It checks the test result, takes a screenshot on failure, logs the status
-     * in the report, and then quits the WebDriver instance for the current thread.
-     *
-     * @param result The result of the test method that has just run.
-     */
     @AfterMethod(alwaysRun = true)
     public void tearDown(ITestResult result) {
         // ✅ Use logger after MDC is still set (cleared at the end)
         Logger methodLogger = LogManager.getLogger(this.getClass());
-        
-        ExtentTest test = ExtentManager.getTest();
-        WebDriver driver = DriverManager.getDriver();
 
-        if (test != null) {
-            if (result.getStatus() == ITestResult.FAILURE) {
-                String failureMsg = "❌ " + result.getMethod().getMethodName()
-                        + " FAILED: " + result.getThrowable().getMessage().split("\n")[0];
-                failureSummaries.add(failureMsg);
+        // The TestListener is now 100% responsible for all report logging.
+        // This method is ONLY for cleanup and failure summaries for Jenkins.
 
-                test.fail(result.getThrowable());
-                methodLogger.error("❌ Test failed: {}", result.getMethod().getMethodName());
-            } else {
-                test.log(Status.PASS, "✅ Test passed");
-            }
+        // ✅ Add failure to summary for Jenkins email/dashboard (TestListener handles
+        // ExtentReports)
+        if (result.getStatus() == ITestResult.FAILURE) {
+            String failureMsg = "❌ " + result.getMethod().getMethodName()
+                    + " FAILED: " + result.getThrowable().getMessage().split("\n")[0];
+            failureSummaries.add(failureMsg);
+
+            methodLogger.error("❌ Test failed: {}", result.getMethod().getMethodName());
         }
 
         DriverManager.quitDriver();
         methodLogger.info("🧹 WebDriver quit after test: {}", result.getMethod().getMethodName());
         ExtentManager.unload();
-        
-        // ✅ CRITICAL: Clear MDC context for thread reuse (prevents race conditions)
+
         ThreadContext.clearAll();
     }
 
     /**
-     * ✅ Runs once per <test> tag completion.
-     * Flushes report and copies it to index.html for Jenkins if needed.
+     * Runs once per <test> tag completion.
+     * Flushes report and writes failure summary.
      */
     @AfterClass(alwaysRun = true)
     public void tearDownClass() {
-        // ✅ Use dynamic logger to pick up MDC context
         Logger classLogger = LogManager.getLogger(this.getClass());
-        
+
         if (extentReports.get() != null) {
             extentReports.get().flush();
             classLogger.info("✅ ExtentReports flushed to disk.");
@@ -215,19 +200,6 @@ public class BaseTest {
             } catch (IOException e) {
                 classLogger.error("❌ Failed to write to merged failure summary", e);
             }
-        }
-
-
-        // Copy the report to index.html if Jenkins expects it
-        try {
-            Path source = Paths.get(reportPath + reportFileName);
-            Path target = Paths.get(reportPath + "index.html");
-            if (Files.exists(source)) {
-                Files.copy(source, target, StandardCopyOption.REPLACE_EXISTING);
-                classLogger.info("📄 Report copied to index.html for Jenkins display.");
-            }
-        } catch (IOException e) {
-            classLogger.error("❌ Failed to copy report to index.html", e);
         }
     }
 }

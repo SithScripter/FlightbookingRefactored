@@ -3,41 +3,35 @@ package com.demo.flightbooking.pages;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
-import org.openqa.selenium.support.ui.Select; // Keep Select for direct dropdown interaction if needed for options retrieval
-
+import org.openqa.selenium.support.ui.Select;
 import com.demo.flightbooking.utils.ConfigReader;
-import com.demo.flightbooking.utils.WebDriverUtils; // Import WebDriverUtils
+import com.demo.flightbooking.utils.WebDriverUtils;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * Represents the Home Page of the BlazeDemo application.
- * This class contains WebElements and methods to interact with the flight search functionality.
+ * This class contains WebElements and methods to interact with the flight
+ * search functionality.
  */
 public class HomePage extends BasePage { // Extend BasePage
 
-    // We no longer need to initialize WebDriverWait here, it's in BasePage
-    // private WebDriverWait wait;
+    // Locators
+    private final By departFromDropdown = By.name("fromPort");
+    private final By arriveAtDropdown = By.name("toPort");
+    private final By findFlightsButton = By.cssSelector("input[type='submit']");
 
-    // --- Locators for elements on the Home Page ---
-    private By departFromDropdown = By.name("fromPort");
-    private By arriveAtDropdown = By.name("toPort");
-    private By findFlightsButton = By.cssSelector("input[type='submit']");
-
-    // WebDriverUtils instance for robust interactions
-    private WebDriverUtils webDriverUtils; // Declare WebDriverUtils
+    private final WebDriverUtils webDriverUtils;
 
     /**
      * Constructor for the HomePage.
+     *
      * @param driver The WebDriver instance.
      */
-    // Constructor to initialize the WebDriver, WebDriverWait (via BasePage), and WebDriverUtils
     public HomePage(WebDriver driver) {
-        super(driver); // Call BasePage constructor
-        // Initialize WebDriverUtils with the driver and the same timeout from ConfigReader
+        super(driver);
         this.webDriverUtils = new WebDriverUtils(driver, ConfigReader.getPropertyAsInt("test.timeout"));
-        logger.info("HomePage initialized."); // Use the logger from BasePage
+        logger.info("HomePage initialized.");
     }
 
     /**
@@ -50,8 +44,8 @@ public class HomePage extends BasePage { // Extend BasePage
         WebElement departFromElement = webDriverUtils.findElement(departFromDropdown); // Use WebDriverUtils
         Select select = new Select(departFromElement);
         return select.getOptions().stream()
-                    .map(WebElement::getText)
-                    .collect(Collectors.toList());
+                .map(WebElement::getText)
+                .toList();
     }
 
     /**
@@ -61,7 +55,6 @@ public class HomePage extends BasePage { // Extend BasePage
      */
     public void selectDepartFromCity(String city) {
         logger.info("Selecting departure city: {}", city);
-        // Use the selectByVisibleText method from WebDriverUtils
         webDriverUtils.selectByVisibleText(departFromDropdown, city);
     }
 
@@ -72,11 +65,11 @@ public class HomePage extends BasePage { // Extend BasePage
      */
     public List<String> getAvailableArriveCities() {
         logger.debug("Getting available arrival cities.");
-        WebElement arriveAtElement = webDriverUtils.findElement(arriveAtDropdown); // Use WebDriverUtils
+        WebElement arriveAtElement = webDriverUtils.findElement(arriveAtDropdown);
         Select select = new Select(arriveAtElement);
         return select.getOptions().stream()
-                    .map(WebElement::getText)
-                    .collect(Collectors.toList());
+                .map(WebElement::getText)
+                .toList();
     }
 
     /**
@@ -86,7 +79,6 @@ public class HomePage extends BasePage { // Extend BasePage
      */
     public void selectArriveAtCity(String city) {
         logger.info("Selecting arrival city: {}", city);
-        // Use the selectByVisibleText method from WebDriverUtils
         webDriverUtils.selectByVisibleText(arriveAtDropdown, city);
     }
 
@@ -95,7 +87,6 @@ public class HomePage extends BasePage { // Extend BasePage
      */
     public void clickFindFlightsButton() {
         logger.info("Clicking Find Flights button.");
-        // Use the click method from WebDriverUtils
         webDriverUtils.click(findFlightsButton);
     }
 
@@ -103,8 +94,8 @@ public class HomePage extends BasePage { // Extend BasePage
      * Selects the departure and destination cities from the dropdowns and
      * submits the form to find available flights.
      *
-     * @param origin      The city of departure (e.g., "Boston").
-     * @param destination The city of arrival (e.g., "London").
+     * @param departCity      The city of departure (e.g., "Boston").
+     * @param arriveCity The city of arrival (e.g., "London").
      */
     public void findFlights(String departCity, String arriveCity) {
         logger.info("Performing flight search from {} to {}.", departCity, arriveCity);

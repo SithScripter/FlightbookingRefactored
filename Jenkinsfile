@@ -1,16 +1,27 @@
-@Library('my-automation-library') _
+@Library('my-automation-library@v1.0.0') _
 
-def branchConfig = getBranchConfig()  // ✅ Load centralized config
+def branchConfig = getBranchConfig()
 
 pipeline {
-    // ✅ We define no top-level agent. This enables a flexible multi-agent
-    // strategy where each stage can use its own specialized environment.
     agent none 
 
-    options {
-        // ✅ Prevents Jenkins from doing an initial checkout on the controller.
-        skipDefaultCheckout()
+    environment {
+        NETWORK_NAME = "selenium-grid-${env.BRANCH_NAME}".replaceAll('[^a-zA-Z0-9_.-]', '_')
     }
+
+options {
+    skipDefaultCheckout()
+    durabilityHint(
+        env.BRANCH_NAME in ['main'] ?
+        'SURVIVABLE_NONATOMIC' :      // Production: safety + speed balance
+        'PERFORMANCE_OPTIMIZED'        // Features: maximum speed
+    )
+    buildDiscarder(logRotator(
+        numToKeepStr: '5',
+        artifactNumToKeepStr: '0'
+    ))
+    disableConcurrentBuilds()
+}
 
     triggers {
         cron('H 2 * * *')
@@ -21,6 +32,8 @@ pipeline {
         choice(name: 'TARGET_ENVIRONMENT', choices: ['PRODUCTION', 'STAGING', 'QA'], description: 'Select test environment.')
         booleanParam(name: 'MANUAL_APPROVAL', defaultValue: false, description: '🛑 Only relevant if "regression" is selected. Ignored for "smoke".')
         string(name: 'QASE_TEST_CASE_IDS', defaultValue: '', description: 'Optional: Override default Qase IDs.')
+    choice(name: 'QUALITY_GATE_THRESHOLD', choices: ['0', '1', '2', '5'], description: 'Max test failures before quality gate fails')
+    booleanParam(name: 'FAIL_ON_NO_TESTS', defaultValue: true, description: 'Mark build UNSTABLE if no test results found')
     }
 
     stages {
@@ -40,14 +53,20 @@ pipeline {
             agent {
                 docker {
                     image 'flight-booking-agent-prewarmed:latest'
-                    args '-u root -v /var/run/docker.sock:/var/run/docker.sock --entrypoint=""'
+                    alwaysPull false
+                    args "-v /var/run/docker.sock:/var/run/docker.sock --entrypoint=\"\""
                 }
             }
             steps {
                 retry(2) {
-                    // Create the Docker network explicitly before starting containers
-                    sh 'docker network create selenium_grid_network || true'
-                    initializeTestEnvironment(env.SUITE_TO_RUN)
+                    echo " Starting Docker Grid..."
+                    printBuildMetadata(env.SUITE_TO_RUN)
+                    startDockerGrid(
+                        'docker-compose-grid.yml',
+                        120,
+                        5,
+                        'http://selenium-hub:4444/wd/hub'
+                    )
                 }
             }
         }
@@ -67,18 +86,12 @@ pipeline {
                 }
             }
         }
-        // Force multi branch pipeline to auto trigger
-        // Force multi branch pipeline to auto trigger
+
         stage('Build & Run Parallel Tests') {
             when {
                 expression { return env.BRANCH_NAME in branchConfig.pipelineBranches }
             }
-            agent {
-                docker {
-                    image 'flight-booking-agent-prewarmed:latest'
-                    args '-u root -v /var/run/docker.sock:/var/run/docker.sock --entrypoint="" --network=selenium_grid_network'
-                }
-            }
+            agent none
             steps {
                 echo "🧪 Running parallel tests for: ${env.SUITE_TO_RUN}"
                 retry(2) {
@@ -87,45 +100,102 @@ pipeline {
                             def mvnBase = "mvn -P force-local-cache clean test -P ${env.SUITE_TO_RUN} -Denv=${params.TARGET_ENVIRONMENT} -Dtest.suite=${env.SUITE_TO_RUN} -Dbrowser.headless=true"
                             parallel(
                                 Chrome: {
-                                    sh script: "${mvnBase} -Dbrowser=chrome -Dreport.dir=chrome", returnStatus: true
+                                    docker.image('flight-booking-agent-prewarmed:latest').inside("-v /var/run/docker.sock:/var/run/docker.sock --network=${env.NETWORK_NAME} --entrypoint=\"\"") {
+                                        cleanWs()
+                                        checkout scm
+                                        sh script: "${mvnBase} -Dbrowser=chrome -Dreport.dir=chrome -Dproject.build.directory=target-chrome", returnStatus: true
+                                        stash name: 'chrome-artifacts', includes: 'reports/**, **/surefire-reports/**, **/regression-failure-summary.txt', allowEmpty: true
+                                    }
                                 },
                                 Firefox: {
-                                    sh script: "${mvnBase} -Dbrowser=firefox -Dreport.dir=firefox", returnStatus: true
+                                    docker.image('flight-booking-agent-prewarmed:latest').inside("-v /var/run/docker.sock:/var/run/docker.sock --network=${env.NETWORK_NAME} --entrypoint=\"\"") {
+                                        cleanWs()
+                                        checkout scm
+                                        sh script: "${mvnBase} -Dbrowser=firefox -Dreport.dir=firefox -Dproject.build.directory=target-firefox", returnStatus: true
+                                        stash name: 'firefox-artifacts', includes: 'reports/**, **/surefire-reports/**, **/regression-failure-summary.txt', allowEmpty: true
+                                    }
                                 }
                             )
                         }
                     }
                 }
-                // Stash all artifacts needed for post-processing
-                echo "Stashing build artifacts (reports, screenshots, test results)..."
-                stash name: 'build-artifacts', includes: 'reports/**, target/surefire-reports/**', allowEmpty: true
             }
         }
     }
 
-    post {
+post {
         always {
             script {
-                // Re-introduce the functional 'inside' wrapper
-                docker.image('flight-booking-agent-prewarmed:latest').inside('-u root -v /var/run/docker.sock:/var/run/docker.sock --entrypoint=""') {
-                    echo "--- Starting Guaranteed Post-Build Processing ---"
 
+                // === STEP 1: Process artifacts in an agent ===
+                docker.image('flight-booking-agent-prewarmed:latest').inside('-v /var/run/docker.sock:/var/run/docker.sock --entrypoint=""') {
+                    echo "--- Starting Guaranteed Post-Build Processing (on agent) ---"
                     try {
-                        unstash 'build-artifacts'
+                        unstash 'chrome-artifacts'
                     } catch (e) {
-                        echo "⚠️ Build artifacts not found to unstash. This is expected if the build failed before stashing."
+                        echo "⚠️ Chrome artifacts not found to unstash."
+                    }
+                    try {
+                        unstash 'firefox-artifacts'
+                    } catch (e) {
+                        echo "⚠️ Firefox artifacts not found to unstash."
                     }
 
-                    // 1. Publish Test Results (sets the final build status)
-                    junit testResults: 'target/surefire-reports/**/*.xml', allowEmptyResults: true
-
-                    // 2. Generate and Publish HTML Reports (from shared library)
+                    sh "cp reports/chrome/${env.SUITE_TO_RUN}-chrome-report.html reports/chrome/index.html || echo 'Chrome report not found'"
+                    sh "cp reports/firefox/${env.SUITE_TO_RUN}-firefox-report.html reports/firefox/index.html || echo 'Firefox report not found'"
+                    junit testResults: '**/surefire-reports/**/*.xml', allowEmptyResults: true
                     generateDashboard(env.SUITE_TO_RUN, "${env.BUILD_NUMBER}")
                     archiveAndPublishReports()
 
-                    // 3. Handle Notifications (Qase, Email)
+                    // === QUALITY GATE ENFORCEMENT ===
+                    def testResults = checkTestFailures()
+                    def totalFailures = (testResults.failures ?: 0) + (testResults.errors ?: 0)
+                    def maxFailures = params.QUALITY_GATE_THRESHOLD ?
+                        params.QUALITY_GATE_THRESHOLD.toInteger() : 0
+
+                    // Handle no tests found scenario
+                    if (testResults.total == 0) {
+                        if (params.FAIL_ON_NO_TESTS) {
+                            currentBuild.result = 'UNSTABLE'
+                            echo "⚠️ Quality Gate: No tests found - marking UNSTABLE"
+                        } else {
+                            echo "ℹ️ Quality Gate: No tests found - allowed by configuration"
+                        }
+                    }
+
+                    echo "📊 Quality Gate: ${totalFailures}/${testResults.total} failures (threshold: ${maxFailures})"
+
+                    if (totalFailures > maxFailures) {
+                        if (env.BRANCH_NAME in branchConfig.productionCandidateBranches) {
+                            error "❌ Quality Gate Failed: ${totalFailures} test failures (threshold: ${maxFailures}) on production branch"
+                        } else {
+                            currentBuild.result = 'UNSTABLE'
+                            echo "⚠️ Quality Gate: Build marked UNSTABLE due to ${totalFailures} failures"
+                        }
+                    } else {
+                        echo "✅ Quality Gate Passed"
+                    }
+
+                    echo "Stashing reports for notification step."
+                    stash name: 'email-reports', includes: 'reports/**'
+                    stash name: 'qase-results', includes: '**/testng-results.xml'
+                }
+
+                // === STEP 2: Unified Notifications (on Controller) ===
+                node {
+                    echo "--- Preparing notifications on Jenkins Controller (in a node context) ---"
+                    try {
+                        unstash 'email-reports'
+                        unstash 'qase-results'
+                    } catch (e) {
+                        echo "⚠️ Could not unstash reports for notification: ${e.getMessage()}"
+                    }
+
+                    checkout scm
+
+                    // --- 2a. Qase Update Logic (Prod Branches Only) ---
                     if (env.BRANCH_NAME in branchConfig.productionCandidateBranches) {
-                        echo "🚀 Running notifications for production-candidate branch..."
+                        echo "🚀 Running Qase update for production-candidate branch..."
                         try {
                             def qaseConfig = readJSON file: 'cicd/qase_config.json'
                             def suiteSettings = qaseConfig[env.SUITE_TO_RUN]
@@ -136,57 +206,48 @@ pipeline {
                                     credentialsId: 'qase-api-token',
                                     testCaseIds: qaseIds
                                 )
-                                sendBuildSummaryEmail(
-                                    suiteName: env.SUITE_TO_RUN,
-                                    emailCredsId: 'recipient-email-list'
-                                )
                             }
                         } catch (err) {
-                            echo "⚠️ Notification step failed: ${err.getMessage()}"
+                            echo "⚠️ Qase update failed: ${err.getMessage()}"
                         }
-                    } else {
-                        echo "ℹ️ Skipping notifications for branch: ${env.BRANCH_NAME}"
                     }
 
-                    // Conditional notifications based on build result
-                    if (currentBuild.result == 'UNSTABLE') {
-                        echo "📧 Notifying QA team for UNSTABLE build on ${env.BRANCH_NAME}"
-                        try {
-                            sendBuildSummaryEmail(
-                                suiteName: env.SUITE_TO_RUN,
-                                emailCredsId: 'recipient-email-list'
-                            )
-                        } catch (err) {
-                            echo "⚠️ Email notification failed: ${err.getMessage()}"
-                        }
-                    } else if (currentBuild.result == 'FAILURE') {
-                        echo "📧 Notifying DevOps team for FAILURE build on ${env.BRANCH_NAME}"
-                        try {
-                            sendBuildSummaryEmail(
-                                suiteName: env.SUITE_TO_RUN,
-                                emailCredsId: 'recipient-email-list'
-                            )
-                        } catch (err) {
-                            echo "⚠️ Email notification failed: ${err.getMessage()}"
+                    // --- 2b. Unified Email Logic ---
+                    def currentResult = currentBuild.result ?: 'SUCCESS'
+                    def previousResult = currentBuild.previousBuild?.result ?: 'SUCCESS'
+
+                    if (currentResult == 'UNSTABLE' || currentResult == 'FAILURE') {
+                        if (currentResult != previousResult) {
+                            echo "✅ Build status changed to ${currentResult}. Sending notification."
+                            try {
+                                sendBuildSummaryEmail(
+                                    suiteName: env.SUITE_TO_RUN,
+                                    branchName: env.BRANCH_NAME
+                                )
+                            } catch (err) {
+                                echo "⚠️ Email notification failed: ${err.getMessage()}"
+                            }
+                        } else {
+                            echo "ℹ️ Skipping email: Build status (${currentResult}) is unchanged from previous build."
                         }
                     }
                 }
             }
         }
+
         success {
             echo "✅ Build SUCCESS. All tests passed."
             script {
                 echo "⏱️ Build duration: ${currentBuild.durationString}"
             }
         }
+
         unstable {
             script {
                 echo "⚠️ Build UNSTABLE. Tests failed. Check the 'Test Dashboard' for detailed results."
                 echo "⏱️ Build duration: ${currentBuild.durationString}"
-                
-                // Fail the build for protected branches when tests are unstable
                 if (env.BRANCH_NAME in branchConfig.productionCandidateBranches) {
-                    error("❌ Failing build due to test failures in protected branch '${env.BRANCH_NAME}'. Test failures in protected branches are not allowed.")
+                    error("❌ Failing build due to test failures in protected branch '${env.BRANCH_NAME}'.")
                 }
             }
         }
@@ -198,12 +259,9 @@ pipeline {
         }
         cleanup {
             script {
-                // Re-introduce the functional 'inside' wrapper
-                docker.image('flight-booking-agent-prewarmed:latest').inside('-u root -v /var/run/docker.sock:/var/run/docker.sock --entrypoint=""') {
-                    if (env.BRANCH_NAME in branchConfig.pipelineBranches) {
-                        echo '🧹 GUARANTEED CLEANUP: Shutting down Selenium Grid...'
-                        stopDockerGrid('docker-compose-grid.yml')
-                    }
+                docker.image('flight-booking-agent-prewarmed:latest').inside('-v /var/run/docker.sock:/var/run/docker.sock --entrypoint=""') {
+                    echo '🧹 GUARANTEED CLEANUP: Shutting down Selenium Grid...'
+                    stopDockerGrid('docker-compose-grid.yml')
                 }
             }
         }
