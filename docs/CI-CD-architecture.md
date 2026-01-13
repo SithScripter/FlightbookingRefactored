@@ -15,15 +15,29 @@ Key principles:
 ## 2. Quick Start
 
 ```bash
-# 1. Start Jenkins (includes JCasC auto-configuration)
-cd jenkinsFinalSetup-temp && docker compose up -d
+# 1.Local Jenkins Setup (Demo / Development Only)
+
+For local experimentation and demo purposes, Jenkins is started using Docker Compose
+with a JCasC-enabled configuration:
+
+docker-compose -f docker-compose-green.yml up -d
+
+This starts a fully configured Jenkins controller using **Configuration as Code (JCasC)**,
+including plugins, credentials, jobs, and system settings — with no manual UI setup.
+
+This local setup exists to:
+
+* Demonstrate full reproducibility
+* Ensure consistent Jenkins behavior across environments
+* Validate CI/CD behavior before pushing changes
 
 # 2. Build agents
 docker build -f cicd/Dockerfile -t flight-booking-agent:latest .
 docker build -f cicd/Dockerfile-prewarmed -t flight-booking-agent-prewarmed:latest .
 
+
 # 3. Push code and trigger pipeline
-# Pipeline handles Selenium Grid, parallel execution, reporting
+Pipeline handles Selenium Grid, parallel execution, reporting
 ```
 
 ## 3. High-Level Architecture
@@ -69,7 +83,7 @@ Reports + Dashboards + Notifications
 
 ---
 
-## 4. Jenkins Pipeline (Pipeline as Code)
+## 5. Jenkins Pipeline (Pipeline as Code)
 
 ### Style
 
@@ -89,9 +103,15 @@ Reports + Dashboards + Notifications
 
 ---
 
-## 5. Jenkins Shared Library
+## 6. Jenkins Shared Library
 
 Reusable pipeline logic is extracted into shared library functions:
+
+**Versioning Strategy:**
+- Production Jenkinsfile uses: `@Library('my-automation-library@v1.0.0') _`
+- Feature branches can test latest: `@Library('my-automation-library@main') _`
+- Shared library is versioned using semantic versioning (vMAJOR.MINOR.PATCH)
+- Tags ensure deterministic builds and instant rollback capability
 
 | Function                  | Responsibility                                  |
 | ------------------------- | ----------------------------------------------- |
@@ -114,7 +134,7 @@ Reusable pipeline logic is extracted into shared library functions:
 
 ---
 
-## 6. Pre-Warmed Build Agents
+## 7. Pre-Warmed Build Agents
 
 ### Purpose
 
@@ -150,7 +170,7 @@ Two layered Docker images:
 
 ---
 
-## 7. Selenium Grid Orchestration
+## 8. Selenium Grid Orchestration
 
 ### Execution Model
 
@@ -176,7 +196,7 @@ Two layered Docker images:
 
 ---
 
-## 8. Test Execution Flow
+## 9. Test Execution Flow
 
 1. Jenkins spins up pre-warmed agent
 2. Selenium Grid is started and validated
@@ -192,7 +212,7 @@ Two layered Docker images:
 
 ---
 
-## 9. Reporting & Dashboards
+## 10. Reporting & Dashboards
 
 ### Reporting Mechanisms
 
@@ -208,7 +228,7 @@ Two layered Docker images:
 
 ---
 
-## 10. Notifications & Test Management
+## 11. Notifications & Test Management
 
 ### Email Notifications
 
@@ -216,8 +236,8 @@ Two layered Docker images:
 * Links to reports
 * Branch-specific recipient lists
 
-  * Feature branches → Dev list
-  * Main / prod branches → Wider audience
+	* Feature branches → Development team
+	* Protected branches (main / release) → Release stakeholders
 
 ### Qase Integration
 
@@ -227,7 +247,7 @@ Two layered Docker images:
 
 ---
 
-## 11. Environment Strategy
+## 12. Environment Strategy
 
 | Aspect          | Strategy                      |
 | --------------- | ----------------------------- |
@@ -238,17 +258,17 @@ Two layered Docker images:
 
 ---
 
-## 12. Design Principles & Benefits
+## 13. Design Principles & Benefits
 
-* **Scalable:** Parallel browsers, isolated containers
-* **Reliable:** Thread-safe execution, deterministic builds
-* **Maintainable:** Shared libraries, clean separation of concerns
-* **Production-style:** Docker, JCasC, IaC principles
-* **Extensible:** Easy move to Kubernetes, cloud agents, enhanced observability
+* **Scalable:** Parallel browsers with isolated containers and networks
+* **Reliable:** Thread-safe execution with deterministic dependency resolution
+* **Maintainable:** Shared libraries and clear separation between pipeline orchestration and logic
+* **Production-style:** Configuration-driven and modular CI/CD design
+* **Future-ready:** Architecture allows evolution toward cloud-hosted agents or container orchestration without rewriting pipeline logic
 
 ---
 
-## 13. Quality Gates
+## 14. Quality Gates
 
 ### Purpose
 
@@ -272,13 +292,11 @@ Automated validation of test results to prevent broken code from progressing thr
 
 ---
 
-## 14. Future Evolution (Roadmap)
+## 15. Future Evolution (Roadmap)
 
-* Kubernetes-based Selenium Grid
-* Jenkins agent autoscaling
-* Prometheus + Grafana monitoring
-* Artifact storage in S3 / Nexus
-* Quality gate enhancements (percentage thresholds, trend analysis)
+* Kubernetes-based Selenium Grid for large-scale parallel execution
+* Jenkins agent autoscaling to optimize CI resource usage
+* Quality gate enhancements (severity-aware thresholds, failure trend analysis)
 
 ---
 

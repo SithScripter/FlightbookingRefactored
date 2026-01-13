@@ -1,6 +1,6 @@
-@Library('my-automation-library') _
+@Library('my-automation-library@v1.0.0') _
 
-def branchConfig = getBranchConfig()  // ✅ Load centralized config
+def branchConfig = getBranchConfig()
 
 pipeline {
     agent none 
@@ -9,10 +9,19 @@ pipeline {
         NETWORK_NAME = "selenium-grid-${env.BRANCH_NAME}".replaceAll('[^a-zA-Z0-9_.-]', '_')
     }
 
-    options {
-        // ✅ Prevents Jenkins from doing an initial checkout on the controller.
-        skipDefaultCheckout()
-    }
+options {
+    skipDefaultCheckout()
+    durabilityHint(
+        env.BRANCH_NAME in ['main'] ?
+        'SURVIVABLE_NONATOMIC' :      // Production: safety + speed balance
+        'PERFORMANCE_OPTIMIZED'        // Features: maximum speed
+    )
+    buildDiscarder(logRotator(
+        numToKeepStr: '5',
+        artifactNumToKeepStr: '0'
+    ))
+    disableConcurrentBuilds()
+}
 
     triggers {
         cron('H 2 * * *')
@@ -36,8 +45,6 @@ pipeline {
                 }
             }
         }
-        // force jenkins to run test automatically
-        // force jenkins to run test automatically
 
         stage('Initialize & Start Grid') {
             when {
@@ -46,8 +53,7 @@ pipeline {
             agent {
                 docker {
                     image 'flight-booking-agent-prewarmed:latest'
-                    alwaysPull false  // Prevent unnecessary image pulls
-                    // --- HANG FIX: Added --entrypoint="" ---
+                    alwaysPull false
                     args "-v /var/run/docker.sock:/var/run/docker.sock --entrypoint=\"\""
                 }
             }
@@ -55,13 +61,11 @@ pipeline {
                 retry(2) {
                     echo " Starting Docker Grid..."
                     printBuildMetadata(env.SUITE_TO_RUN)
-
-                    // --- LIBRARY FIX: Pass correct Hub URL and Network Name ---
                     startDockerGrid(
-                        'docker-compose-grid.yml',         // 1. composeFile
-                        120,                               // 2. maxWaitSeconds (default)
-                        5,                                 // 3. checkIntervalSeconds (default)
-                        'http://selenium-hub:4444/wd/hub'  // 4. hubUrl (our override)
+                        'docker-compose-grid.yml',
+                        120,
+                        5,
+                        'http://selenium-hub:4444/wd/hub'
                     )
                 }
             }
@@ -100,7 +104,6 @@ pipeline {
                                         cleanWs()
                                         checkout scm
                                         sh script: "${mvnBase} -Dbrowser=chrome -Dreport.dir=chrome -Dproject.build.directory=target-chrome", returnStatus: true
-                                        // ✅ --- STASH FIX: Stash artifacts from this workspace ---
                                         stash name: 'chrome-artifacts', includes: 'reports/**, **/surefire-reports/**, **/regression-failure-summary.txt', allowEmpty: true
                                     }
                                 },
@@ -109,7 +112,6 @@ pipeline {
                                         cleanWs()
                                         checkout scm
                                         sh script: "${mvnBase} -Dbrowser=firefox -Dreport.dir=firefox -Dproject.build.directory=target-firefox", returnStatus: true
-                                        // ✅ --- STASH FIX: Stash artifacts from this workspace ---
                                         stash name: 'firefox-artifacts', includes: 'reports/**, **/surefire-reports/**, **/regression-failure-summary.txt', allowEmpty: true
                                     }
                                 }
@@ -214,14 +216,10 @@ post {
                     def currentResult = currentBuild.result ?: 'SUCCESS'
                     def previousResult = currentBuild.previousBuild?.result ?: 'SUCCESS'
 
-                    // Only send notifications for failed or unstable builds
                     if (currentResult == 'UNSTABLE' || currentResult == 'FAILURE') {
-
-                        // POLISH 1: Only email if the status has CHANGED (e.g., SUCCESS -> UNSTABLE)
                         if (currentResult != previousResult) {
                             echo "✅ Build status changed to ${currentResult}. Sending notification."
                             try {
-                                // POLISH 2: Pass branchName to the library for branch-aware recipients
                                 sendBuildSummaryEmail(
                                     suiteName: env.SUITE_TO_RUN,
                                     branchName: env.BRANCH_NAME

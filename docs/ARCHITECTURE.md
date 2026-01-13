@@ -4,26 +4,24 @@
 
 ```
 ┌─────────────────────────────────────────┐
-│              Test Layer                │  (Test Classes)
+│              Test Layer                 │  (Test Classes)
 ├─────────────────────────────────────────┤
-│              Page Layer                │  (Page Objects)
+│            Domain Layer                 │  (Page Objects)
 ├─────────────────────────────────────────┤
-│           Component Layer              │  (Reusable Components)
-├─────────────────────────────────────────┤
-│             Core Layer                 │  (Framework Core)
-│  ┌─────────────┴─────────────┐         │
-│  │    Driver Management      │         │
-│  │    Wait Strategies        │         │
-│  │    Listeners              │         │
-│  │    Retry Mechanism        │         │
-│  └─────────────┬─────────────┘         │
+│         Infrastructure Layer            │  (Framework Core)
+│  ┌─────────────┴─────────────┐          │
+│  │    Driver Management      │          │
+│  │    Wait Strategies        │          │
+│  │    Listeners              │          │
+│  │    Retry Mechanism        │          │
+│  └─────────────┬─────────────┘          │
 └─────────────────────────────────────────┘
 ```
 
 ## Core Components
 
 ### 1. Driver Management
-- **Location**: `src/main/java/com/demo/flightbooking/factory/`
+- **Location**: `src/main/java/com/demo/flightbooking/utils/DriverManager.java`, `src/main/java/com/demo/flightbooking/factory/BrowserOptionsFactory.java`
 - **Responsibility**: Manages WebDriver lifecycle
 - **Key Features**:
   - Thread-safe WebDriver instances
@@ -32,10 +30,9 @@
 
 ### 2. Page Objects
 - **Location**: `src/main/java/com/demo/flightbooking/pages/`
-- **Pattern**: Page Object Model (POM)
+- **Pattern**: Page Object Model (POM) with composition
 - **Structure**:
   - BasePage: Common page functionality
-  - Component: Reusable UI components
   - Pages: Page-specific classes
 
 ### 3. Test Data Management
@@ -71,7 +68,7 @@
     - Screenshot capture on failure
     - Custom reporting hooks
     - Test execution tracking
-    - **CI/CD Integration**: Reports are parsed by Jenkins quality gates for automated pass/fail enforcement
+    - **CI/CD Integration**: Jenkins quality gates evaluate TestNG/Surefire XML results for pass/fail decisions; HTML reports are for human-readable diagnostics.
 - **Location**: `src/main/java/com/demo/flightbooking/utils/`
 - **Components**:
   - ConfigReader: Configuration file parsing and management
@@ -81,24 +78,23 @@
   - ScreenshotUtils: Screenshot capture and management
   - WebDriverUtils: WebDriver helper methods and utilities
 
+WebDriverUtils follows an instance-based interaction model.
+Page Objects delegate all waits and interactions to WebDriverUtils,
+ensuring centralized timeout control via configuration.
+
 ## Design Patterns
 
-### 1. Page Object Model (POM)
+### 1. Page Object Model (POM) with Composition
 - Encapsulates page details
-- Reduces code duplication
+- Delegates interactions to utilities
 - Improves maintainability
 
 ### 2. Factory Pattern
-- Creates WebDriver instances
-- Manages test data generation
+- Creates WebDriver instances via BrowserOptionsFactory
 
-### 3. Builder Pattern
-- Constructs complex objects
-- Improves test readability
-
-### 4. Singleton Pattern
-- Manages configuration
-- Handles WebDriver instances
+### 3. Singleton Pattern
+- Manages configuration via ConfigReader
+- Handles ExtentManager for reports
 
 ## Best Practices
 
@@ -108,7 +104,6 @@
 - Arrange-Act-Assert pattern
 
 ### 2. Error Handling
-- Custom exceptions
 - Meaningful error messages
 - Screenshot on failure
 
@@ -116,6 +111,19 @@
 - Log4j2
 - Appropriate log levels
 - Structured logging
+
+## Additional Components
+
+### Enums
+- **Location**: `src/main/java/com/demo/flightbooking/enums/`
+- **Components**:
+  - BrowserType: Defines supported browsers (CHROME, FIREFOX, EDGE)
+  - EnvironmentType: Defines environments (QA, STAGING, PRODUCTION)
+
+### Model
+- **Location**: `src/main/java/com/demo/flightbooking/model/`
+- **Components**:
+  - Passenger: Data model for test data using record pattern
 
 ## Dependencies
 
@@ -128,3 +136,5 @@
 - Commons IO
 - OpenCSV
 - Jackson Databind
+- DataFaker
+- Apache Commons Lang

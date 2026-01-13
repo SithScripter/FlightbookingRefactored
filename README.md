@@ -7,6 +7,8 @@ A robust Selenium test automation framework designed for end-to-end testing of t
 ### Core Framework
 - Page Object Model (POM) with composition pattern
 - Modular layered architecture (Infrastructure → Domain → Test)
+- Centralized WebDriver utilities with instance-based interaction model
+- Configuration-driven wait and timeout strategy (no hardcoded waits in Page Objects)
 - Comprehensive Log4j2 logging with MDC context
 
 ### Testing Capabilities
@@ -83,7 +85,7 @@ For debugging, tests can also be run directly from the IDE with:
 
 After test execution, detailed HTML reports are available in:
 - `reports/{browser}/` - Individual test run reports
-- `test-output/` - TestNG reports and logs
+- `target/surefire-reports/` - TestNG reports and logs
 
 Reports are generated **per browser execution** and aggregated in CI.
 

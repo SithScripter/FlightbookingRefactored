@@ -14,10 +14,10 @@ This document outlines the policies, behaviors, and operational procedures for t
 
 ### Build Failure Conditions
 
-- **FAILURE (Red)**: The build is immediately stopped and marked as failed. This occurs when:
-  - A critical infrastructure or script error occurs in any stage.
-  - Any test fails when run on a protected branch (main, enhancements).
-- **UNSTABLE (Yellow)**: The build completes all stages, but one or more tests have failed. This is the expected outcome for test failures on feature branches.
+- **FAILURE (Red)**: The build is marked as failed. This occurs when:
+  - A critical infrastructure or script error occurs in any stage (build stops immediately).
+  - Test failures exceed the quality gate threshold on a protected branch (main, enhancements), after all tests complete.
+- **UNSTABLE (Yellow)**: The build completes all stages, but test failures exceed the configured quality gate threshold on feature branches. This allows development to continue while clearly surfacing test issues.
 
 ### Test Execution Strategy
 
@@ -70,7 +70,33 @@ The pipeline ensures that all resources are properly shut down after every run, 
 - Docker container removal
 - Jenkins workspace cleanup
 
-## 4. The Build Environment
+## 4. Performance Optimizations
+
+The pipeline includes several performance enhancements to balance speed and reliability:
+
+### Pipeline Durability
+
+**Conditional durability settings:**
+- **Main branch:** `SURVIVABLE_NONATOMIC` - Balance of crash recovery and performance
+- **Feature branches:** `PERFORMANCE_OPTIMIZED` - Maximum speed, minimal metadata overhead
+
+**Trade-off:** Feature builds cannot resume after crash but execute 20-30% faster. Acceptable since re-runs are cheap for CI tests.
+
+### Build Retention
+
+**Automatic cleanup:**
+- Keeps last 5 builds per branch
+- Archives 0 artifacts (reports published to Jenkins UI only)
+- HTML reports: `keepAll=false` (only latest retained)
+
+**Result:** Build metadata stays under 1MB per build (down from 4-5MB), preventing UI slowdown.
+
+### Other Optimizations
+
+- **disableConcurrentBuilds**: Prevents resource conflicts with Selenium Grid
+- **JVM heap sizing**: 3GB with G1GC for stable performance with ~400 plugins
+
+## 5. The Build Environment
 
 ### Docker Agent & Caching
 
@@ -86,35 +112,25 @@ The pre-warmed Docker image must be rebuilt to keep the cache up to date. Rebuil
 2. Changing system-level tools in the base Dockerfile.
 3. Updating the base Maven/Java image version.
 
-## 5. Local Development
+## 6. Local Development
 
 ### Running Tests Locally
 
 ```bash
-# Run the default (smoke) test suite
-mvn clean test
+# Run the default (smoke) test suite on default chrome browser
+mvn clean test -Dselenium.grid.enabled=false
 
 # Run the regression suite by activating its profile
-mvn clean test -P regression
+mvn clean test -P regression -Dselenium.grid.enabled=false
 
 # Run a specific TestNG group (e.g., 'smoke')
-mvn clean test -Dgroups=smoke
+mvn clean test -Dgroups=smoke -Dselenium.grid.enabled=false
 
 # Run with a specific browser
-mvn clean test -Dbrowser=firefox
+mvn clean test -Dbrowser=firefox -Dselenium.grid.enabled=false
 ```
 
-### Starting the Selenium Grid
-
-```bash
-# Start the Selenium Grid in the background
-docker-compose -f docker-compose-grid.yml up -d
-
-# Shut down the Grid when finished
-docker-compose -f docker-compose-grid.yml down
-```
-
-## 6. Dependencies & Prerequisites
+## 7. Dependencies & Prerequisites
 
 ### Shared Library
 
@@ -123,12 +139,13 @@ The pipeline relies on a Jenkins Shared Library for reusable functions.
 
 ### Required Jenkins Credentials
 
-The following credential IDs must be configured in Jenkins for the pipeline to function correctly:
+The following credential IDs must be available in Jenkins for the pipeline to function correctly
+(these are provisioned centrally via Jenkins Configuration as Code):
 
-- `qase-api-token`: API token for updating test results in Qase.
-- `recipient-email-list`: The distribution list for email notifications.
+- `qase-api-token`: API token for publishing test results to Qase.
+- `recipient-email-list`: Distribution list used for pipeline notifications.
 
-## 7. Troubleshooting
+## 8. Troubleshooting
 
 ### Common Issues
 
@@ -148,7 +165,7 @@ The following credential IDs must be configured in Jenkins for the pipeline to f
 
 - **Symptom**: The build is marked as `FAILURE` when tests fail on `main` or `enhancements`.
 - **Explanation**: This is by design to enforce quality on protected branches.
-- **Action**: Fix the failing tests in your feature branch before merging.
+- **Action**: Fix the failing tests in feature branch before merging.
 
 #### 4. Random Docker/Network Errors
 
@@ -168,11 +185,11 @@ The following credential IDs must be configured in Jenkins for the pipeline to f
 - **Build History**: Check Jenkins build history.
 - **Logs**: Access detailed execution logs in Jenkins.
 
-## 8. Best Practices
+## 9. Best Practices
 
 1. **Keep the Pre-warmed Image Up to Date**: Always rebuild the image after `pom.xml` dependency changes.
 2. **Run Tests Locally First**: Catch issues early before pushing code.
 3. **Rebase Feature Branches Regularly**: Keep branches updated to avoid large merge conflicts.
 4. **Monitor Test Flakiness**: Investigate and fix tests that fail intermittently.
-5. **Use Meaningful Commit Messages**: Clearly explain the "what" and the "why" of your changes.
+5. **Use Meaningful Commit Messages**: Clearly explain the "what" and the "why" of changes.
 6. **Document Significant Changes**: Update this guide when making major changes to the pipeline or framework.

@@ -53,7 +53,7 @@
 **/node_modules/
 
 # =======================================================
-# Test Framework Specific Output (ADDED)
+# Test Framework Specific Output
 # =======================================================
 /logs/
 /reports/
@@ -65,6 +65,7 @@
 
 #Project specific files
 /project_structure.txt
+/project_structure-2.txt
 
 
 # Temporary test files
