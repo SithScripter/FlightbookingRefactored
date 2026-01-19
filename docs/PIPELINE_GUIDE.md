@@ -34,7 +34,7 @@ The following parameters are available when running a build manually in Jenkins:
 | Parameter | Options | Description |
 |-----------|---------|-------------|
 | SUITE_NAME | smoke, regression | Selects the TestNG suite to execute. |
-| TARGET_ENVIRONMENT | PRODUCTION, STAGING, QA | Specifies the test environment configuration to use. |
+| TARGET_ENVIRONMENT | QA, STAGING, PRODUCTION | Specifies the test environment configuration to use. |
 | MANUAL_APPROVAL | true, false | If true, pauses the pipeline for manual approval before running regression tests on protected branches. |
 | QASE_TEST_CASE_IDS | String of IDs | (Optional) A comma-separated list of Qase Test Case IDs to update, overriding the defaults. |
 | QUALITY_GATE_THRESHOLD | 0, 1, 2, 5 | Maximum number of test failures allowed before the quality gate fails. Default is 0 (zero tolerance). |
