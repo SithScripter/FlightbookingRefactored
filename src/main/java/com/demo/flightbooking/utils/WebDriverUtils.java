@@ -9,6 +9,7 @@ import org.openqa.selenium.support.ui.WebDriverWait;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.Set;
 
 /**
  * A utility class providing robust explicit wait methods for Selenium.
@@ -24,6 +25,14 @@ public class WebDriverUtils {
     private final Logger logger;
 
     /**
+     * Locator substrings that identify sensitive fields.
+     * When sendKeys() targets one of these, the logged value is masked
+     * while the actual browser input remains unmasked.
+     */
+    private static final Set<String> SENSITIVE_FIELD_IDENTIFIERS = Set.of(
+            "creditcardnumber", "cardnumber", "cvv", "ssn", "password");
+
+    /**
      * Constructor for WebDriverUtils.
      * Initializes the WebDriverWait with a timeout defined in the config file.
      *
@@ -33,6 +42,18 @@ public class WebDriverUtils {
         this.driver = driver;
         this.wait = new WebDriverWait(driver, Duration.ofSeconds(timeoutSeconds));
         this.logger = LogManager.getLogger(WebDriverUtils.class); // Logger for this utility class
+    }
+
+    /**
+     * Checks if a locator targets a sensitive field by comparing its string
+     * representation against known sensitive field identifiers.
+     *
+     * @param locator The By locator to check.
+     * @return true if the locator matches a sensitive field identifier.
+     */
+    private boolean isSensitiveField(By locator) {
+        String locatorStr = locator.toString().toLowerCase();
+        return SENSITIVE_FIELD_IDENTIFIERS.stream().anyMatch(locatorStr::contains);
     }
 
     /**
@@ -104,12 +125,13 @@ public class WebDriverUtils {
      * @param text    The text to send.
      */
     public void sendKeys(By locator, String text) {
-        logger.info("Sending keys '{}' to element: {}", text, locator);
+        String logSafeText = isSensitiveField(locator) ? MaskingUtil.maskSensitiveValue(text) : text;
+        logger.info("Sending keys '{}' to element: {}", logSafeText, locator);
         try {
             WebElement element = findElement(locator); // Uses findElement to ensure visibility
             element.clear();
-            element.sendKeys(text);
-            logger.info("Successfully sent keys '{}' to element: {}", text, locator);
+            element.sendKeys(text); // Actual value sent to browser — NOT masked
+            logger.info("Successfully sent keys '{}' to element: {}", logSafeText, locator);
         } catch (WebDriverException e) {
             logger.error("Error sending keys to element {}: {}", locator, e.getMessage(), e);
             throw e;
