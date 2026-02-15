@@ -14,7 +14,9 @@
         <selenium.version>4.27.0</selenium.version>
         <testng.version>7.10.2</testng.version>
         <webdrivermanager.version>6.1.0</webdrivermanager.version>
-        <jackson.version>2.18.0</jackson.version>
+        <jackson.version>2.18.1</jackson.version>
+        <slf4j.version>2.0.13</slf4j.version>
+        <datafaker.version>2.3.1</datafaker.version>
         <log4j.version>2.24.1</log4j.version>
         <commonsio.version>2.19.0</commonsio.version>
         <opencsv.version>5.11.2</opencsv.version>
@@ -46,14 +48,6 @@
             </exclusions>
         </dependency>
 
-        <!-- SLF4J 2.x API for Log4j2 binding -->
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-            <version>2.0.13</version>
-            <scope>test</scope>
-        </dependency>
-
         <dependency>
             <groupId>io.github.bonigarcia</groupId>
             <artifactId>webdrivermanager</artifactId>
@@ -67,17 +61,15 @@
             <version>${log4j.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.apache.logging.log4j</groupId>
-            <artifactId>log4j-core</artifactId>
-            <version>${log4j.version}</version>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>${slf4j.version}</version>
         </dependency>
-        
-        <!-- SLF4J to Log4j2 Bridge -->
+
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-slf4j2-impl</artifactId>
             <version>${log4j.version}</version>
-            <scope>test</scope>
         </dependency>
 
         <!-- Reports -->
@@ -110,7 +102,7 @@
         <dependency>
             <groupId>net.datafaker</groupId>
             <artifactId>datafaker</artifactId>
-            <version>2.3.1</version>
+            <version>${datafaker.version}</version>
             <scope>test</scope>
         </dependency>
 
@@ -155,26 +147,7 @@
                 </configuration>
             </plugin>
 
-            <!-- Allow adding test sources -->
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>build-helper-maven-plugin</artifactId>
-                <version>3.2.0</version>
-                <executions>
-                    <execution>
-                        <id>add-test-source</id>
-                        <phase>generate-test-sources</phase>
-                        <goals>
-                            <goal>add-test-source</goal>
-                        </goals>
-                        <configuration>
-                            <sources>
-                                <source>src/test/java</source>
-                            </sources>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
+
         </plugins>
     </build>
 
