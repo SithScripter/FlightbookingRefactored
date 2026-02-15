@@ -73,12 +73,13 @@ public class EndToEndBookingTest extends BaseTest {
         Assert.assertFalse(totalAmount.isEmpty(), "Total amount should not be empty!");
 
         // Capture SUCCESS screenshot with confirmation ID for audit trail
-        ScreenshotUtils.captureScreenshot(driver, "booking_success_" + confirmationId);
+        String screenshotPath = ScreenshotUtils.captureScreenshot(driver, "booking_success_" + confirmationId);
 
         if (test != null) {
             test.pass("Flight booking (JSON) successful for: " + passenger.firstName() + " " + passenger.lastName());
             test.info("Confirmation ID: " + confirmationId);
             test.info("Total Amount: " + totalAmount);
+            test.addScreenCaptureFromPath("../screenshots/" + new java.io.File(screenshotPath).getName());
         }
         logger.info("Flight booking (JSON) completed for passenger: {} {}", passenger.firstName(),
                 passenger.lastName());

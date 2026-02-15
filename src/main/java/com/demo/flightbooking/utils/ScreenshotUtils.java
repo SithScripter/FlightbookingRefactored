@@ -53,6 +53,7 @@ public class ScreenshotUtils {
         File srcFile = ((TakesScreenshot) driver).getScreenshotAs(OutputType.FILE);
         try {
             FileUtils.copyFile(srcFile, new File(fullPath));
+            logger.info("📸 Screenshot saved: {}", fullPath);
         } catch (IOException e) {
             logger.error("Failed to save screenshot to {}", fullPath, e);
         }
