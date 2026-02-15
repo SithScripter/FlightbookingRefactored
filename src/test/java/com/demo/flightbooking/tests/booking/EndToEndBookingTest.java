@@ -1,5 +1,7 @@
 package com.demo.flightbooking.tests.booking;
 
+import com.demo.flightbooking.pages.ConfirmationPage;
+import com.demo.flightbooking.utils.*;
 import org.openqa.selenium.WebDriver;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -10,12 +12,6 @@ import com.demo.flightbooking.pages.FlightSelectionPage;
 import com.demo.flightbooking.pages.HomePage;
 import com.demo.flightbooking.pages.PurchasePage;
 import com.demo.flightbooking.tests.base.BaseTest;
-import com.demo.flightbooking.utils.ConfigReader;
-import com.demo.flightbooking.utils.CsvDataProvider;
-import com.demo.flightbooking.utils.DriverManager;
-import com.demo.flightbooking.utils.ExtentManager;
-import com.demo.flightbooking.utils.JsonDataProvider;
-import com.demo.flightbooking.utils.WebDriverUtils;
 
 /**
  * Contains the end-to-end test case for successfully booking a flight.
@@ -34,11 +30,10 @@ public class EndToEndBookingTest extends BaseTest {
      * @param passenger A Passenger object containing all necessary data for one
      *                  test run.
      */
-    @Test(dataProvider = "passengerData", dataProviderClass = JsonDataProvider.class, groups = { "regression", "smoke",
-            "passenger_booking" }, testName = "Verify successful end-to-end booking using data from JSON")
+    @Test(dataProvider = "passengerData", dataProviderClass = JsonDataProvider.class, groups = { "regression", "smoke"},
+            testName = "Verify successful end-to-end booking using data from JSON")
     public void testEndToEndBookingFromJson(Passenger passenger) {
         WebDriver driver = DriverManager.getDriver();
-        WebDriverUtils webDriverUtils = new WebDriverUtils(driver, ConfigReader.getPropertyAsInt("test.timeout"));
         driver.get(ConfigReader.getApplicationUrl());
         ExtentTest test = ExtentManager.getTest();
 
@@ -51,26 +46,39 @@ public class EndToEndBookingTest extends BaseTest {
                 passenger.firstName(), passenger.lastName(), passenger.origin(), passenger.destination());
 
         HomePage homePage = new HomePage(driver);
+        Assert.assertTrue(homePage.isHomePageDisplayed(), "Home page is not displayed!");
         homePage.findFlights(passenger.origin(), passenger.destination());
 
-        boolean urlContainsReserve = webDriverUtils.waitUntilUrlContains("/reserve.php");
-        Assert.assertTrue(urlContainsReserve, "Did not navigate to reserve page!");
-
         FlightSelectionPage flightSelectionPage = new FlightSelectionPage(driver);
+        Assert.assertTrue(flightSelectionPage.isFlightSelectionPageDisplayed(),"Flight Selection Page is not displayed!");
         flightSelectionPage.clickChooseFlightButton();
 
-        boolean urlContainsPurchase = webDriverUtils.waitUntilUrlContains("/purchase.php");
-        Assert.assertTrue(urlContainsPurchase, "Did not navigate to purchase page!");
-
         PurchasePage purchasePage = new PurchasePage(driver);
+        Assert.assertTrue(purchasePage.isPurchasePageDisplayed(), "Purchase Page is not displayed!");
         purchasePage.fillPurchaseForm(passenger);
         purchasePage.clickPurchaseFlightButton();
 
-        boolean urlContainsConfirmation = webDriverUtils.waitUntilUrlContains("/confirmation.php");
-        Assert.assertTrue(urlContainsConfirmation, "Did not navigate to confirmation page after purchase.");
+        ConfirmationPage confirmationPage = new ConfirmationPage(driver);
+        Assert.assertTrue(confirmationPage.isConfirmationPageDisplayed(), "Confirmation page is not displayed!");
+
+        String thankYouMessage = confirmationPage.getThankYouMessage();
+        Assert.assertEquals(thankYouMessage, "Thank you for your purchase today!","Thank you message mismatch!");
+
+        String confirmationId = confirmationPage.getConfirmationId();
+        Assert.assertNotNull(confirmationId, "Confirmation ID should not be null!");
+        Assert.assertFalse(confirmationId.isEmpty(), "Confirmation ID should not be empty!");
+
+        String totalAmount = confirmationPage.getTotalAmount();
+        Assert.assertNotNull(totalAmount, "Total amount should not be null!");
+        Assert.assertFalse(totalAmount.isEmpty(), "Total amount should not be empty!");
+
+        // Capture SUCCESS screenshot with confirmation ID for audit trail
+        ScreenshotUtils.captureScreenshot(driver, "booking_success_" + confirmationId);
 
         if (test != null) {
             test.pass("Flight booking (JSON) successful for: " + passenger.firstName() + " " + passenger.lastName());
+            test.info("Confirmation ID: " + confirmationId);
+            test.info("Total Amount: " + totalAmount);
         }
         logger.info("Flight booking (JSON) completed for passenger: {} {}", passenger.firstName(),
                 passenger.lastName());
@@ -87,7 +95,6 @@ public class EndToEndBookingTest extends BaseTest {
             "smoke" }, testName = "Verify flight search for all valid routes from CSV")
     public void testAllValidRoutesFromCsv(String departureCity, String destinationCity) {
         WebDriver driver = DriverManager.getDriver();
-        WebDriverUtils webDriverUtils = new WebDriverUtils(driver, ConfigReader.getPropertyAsInt("test.timeout"));
         driver.get(ConfigReader.getApplicationUrl());
         ExtentTest test = ExtentManager.getTest();
 
@@ -97,15 +104,16 @@ public class EndToEndBookingTest extends BaseTest {
         logger.info("Starting flight search for route: {} to {}", departureCity, destinationCity);
 
         HomePage homePage = new HomePage(driver);
+        Assert.assertTrue(homePage.isHomePageDisplayed(), "Home page is not displayed!");
         homePage.findFlights(departureCity, destinationCity);
 
-        boolean urlContainsReserve = webDriverUtils.waitUntilUrlContains("/reserve.php");
-        Assert.assertTrue(urlContainsReserve,
-                "Did not navigate to reserve page for route " + departureCity + " to " + destinationCity);
+        FlightSelectionPage flightSelectionPage = new FlightSelectionPage(driver);
+        Assert.assertTrue(flightSelectionPage.isFlightSelectionPageDisplayed(),
+                "Flight Selection Page is not displayed for route " + departureCity + " to " + destinationCity);
 
         if (test != null) {
-            test.pass("Flight search successful for route: " + departureCity + " to " + destinationCity);
+            test.pass("Flight search (CSV) successful for route: " + departureCity + " to " + destinationCity);
         }
-        logger.info("Flight search completed for route: {} to {}", departureCity, destinationCity);
+        logger.info("Flight search (CSV) completed for route: {} to {}", departureCity, destinationCity);
     }
 }

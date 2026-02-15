@@ -38,9 +38,22 @@ public class PurchasePage extends BasePage {
     public PurchasePage(WebDriver driver) {
         super(driver);
         this.webDriverUtils = new WebDriverUtils(driver, ConfigReader.getPropertyAsInt("test.timeout"));
+        logger.info("PurchasePage initialized.");
     }
 
     // --- High-Level Service Method ---
+
+    /**
+     * Verifies that the Purchase page is displayed by checking
+     * if the first name input field is visible.
+     *
+     * @return true if the first name input is displayed.
+     */
+    public boolean isPurchasePageDisplayed() {
+        boolean isDisplayed = webDriverUtils.isElementDisplayed(firstNameInput);
+        logger.info("Purchase page displayed: {}", isDisplayed);
+        return isDisplayed;
+    }
 
     /**
      * Fills the entire purchase form using data from a Passenger record.

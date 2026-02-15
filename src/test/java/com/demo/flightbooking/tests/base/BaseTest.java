@@ -124,7 +124,8 @@ public class BaseTest {
         String mdcBrowser = (browser != null && !browser.isBlank()) ? browser : "UNKNOWN";
 
         // Set thread name for log4j %X{thread} pickup
-        String customThreadName = "TestNG-test-" + mdcSuite.toLowerCase() + "-" + browser.toLowerCase() + "-1";
+        String customThreadName = "TestNG-test-" + mdcSuite.toLowerCase() + "-" + browser.toLowerCase() + "-"
+                + Thread.currentThread().threadId();
         Thread.currentThread().setName(customThreadName);
 
         // Set MDC context for THIS thread
@@ -174,7 +175,7 @@ public class BaseTest {
      * Flushes report and writes failure summary.
      */
     @AfterClass(alwaysRun = true)
-    public void tearDownClass() {
+        public void tearDownClass() {
         Logger classLogger = LogManager.getLogger(this.getClass());
 
         if (extentReports.get() != null) {
@@ -183,16 +184,17 @@ public class BaseTest {
         }
 
         // Optional logic to write summary and copy report
-        String reportDir = System.getProperty("report.dir", "default");
+
         String suiteName = System.getProperty("test.suite", "default");
-        String reportPath = "reports/" + reportDir + "/";
-        String reportFileName = suiteName + "-" + reportDir + "-report.html";
         String mergedSummaryFile = "reports/" + suiteName + "-failure-summary.txt";
 
         if (!failureSummaries.isEmpty()) {
             try {
                 File file = new File(mergedSummaryFile);
-                file.getParentFile().mkdirs(); // Ensure reports/ exists
+                boolean created = file.getParentFile().mkdirs();
+                if (created) {
+                    classLogger.info("📁 Reports directory created.");
+                }
                 try (PrintWriter out = new PrintWriter(new FileWriter(file, true))) { // append mode
                     failureSummaries.forEach(out::println);
                     classLogger.info("📄 Failure summary appended to merged file: {}", mergedSummaryFile);

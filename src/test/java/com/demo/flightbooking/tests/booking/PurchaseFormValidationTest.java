@@ -35,7 +35,6 @@ public class PurchaseFormValidationTest extends BaseTest {
         )
     public void testPurchaseWithInvalidData() {
         WebDriver driver = DriverManager.getDriver();
-        WebDriverUtils webDriverUtils = new WebDriverUtils(driver, ConfigReader.getPropertyAsInt("test.timeout"));
         driver.get(ConfigReader.getApplicationUrl());
         ExtentTest test = ExtentManager.getTest();
 
@@ -46,19 +45,17 @@ public class PurchaseFormValidationTest extends BaseTest {
 
         // Hardcode valid flight selection: Paris to Rome
         HomePage homePage = new HomePage(driver);
+        Assert.assertTrue(homePage.isHomePageDisplayed(), "Home page is not displayed!");
         homePage.findFlights("Paris", "Rome");
 
-        boolean urlContainsReserve = webDriverUtils.waitUntilUrlContains("/reserve.php");
-        Assert.assertTrue(urlContainsReserve, "Did not navigate to reserve page!");
-
         FlightSelectionPage flightSelectionPage = new FlightSelectionPage(driver);
+        Assert.assertTrue(flightSelectionPage.isFlightSelectionPageDisplayed(),
+                "Flight Selection Page is not displayed!");
         flightSelectionPage.clickChooseFlightButton();
-
-        boolean urlContainsPurchase = webDriverUtils.waitUntilUrlContains("/purchase.php");
-        Assert.assertTrue(urlContainsPurchase, "Did not navigate to purchase page!");
 
         // Create invalid passenger data using DataFaker
         PurchasePage purchasePage = new PurchasePage(driver);
+        Assert.assertTrue(purchasePage.isPurchasePageDisplayed(), "Purchase Page is not displayed!");
         purchasePage.fillPurchaseForm(new Passenger(
             "Paris",
             "Rome",

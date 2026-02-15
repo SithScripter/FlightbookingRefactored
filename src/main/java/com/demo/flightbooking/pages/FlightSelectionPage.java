@@ -39,6 +39,18 @@ public class FlightSelectionPage extends BasePage {
     // --- Action Methods ---
 
     /**
+     * Verifies that the Flight Selection page is displayed by checking
+     * if the flight table is visible.
+     *
+     * @return true if the flight table is displayed.
+     */
+    public boolean isFlightSelectionPageDisplayed() {
+        boolean isDisplayed = webDriverUtils.isElementDisplayed(flightRows);
+        logger.info("Flight Selection page displayed: {}", isDisplayed);
+        return isDisplayed;
+    }
+
+    /**
      * Clicks the "Choose This Flight" button to select the first available flight.
      */
     public void clickChooseFlightButton() {

@@ -1,7 +1,6 @@
 package com.demo.flightbooking.utils;
 
 import com.demo.flightbooking.model.Passenger;
-import com.demo.flightbooking.utils.ConfigReader;
 import org.testng.annotations.DataProvider;
 
 import java.io.BufferedReader;
