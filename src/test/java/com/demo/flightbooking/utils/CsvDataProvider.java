@@ -24,10 +24,10 @@ public class CsvDataProvider {
      * @return A 2D Object array where each inner array contains a single Passenger object.
      */
     @DataProvider(name = "passengerCsvData")
-    public Object[][] provideCsvData() throws Exception {
+    public static Object[][] provideCsvData() throws Exception {
         List<Passenger> passengerList = new ArrayList<>();
 
-        InputStream is = getClass().getClassLoader().getResourceAsStream(CSV_FILE);
+        InputStream is = CsvDataProvider.class.getClassLoader().getResourceAsStream(CSV_FILE);
         if (is == null) {
             throw new RuntimeException("CSV file not found on classpath: " + CSV_FILE);
         }
@@ -83,10 +83,10 @@ public class CsvDataProvider {
      * @return A 2D Object array where each inner array contains departureCity and destinationCity.
      */
     @DataProvider(name = "routesData")
-    public Object[][] provideRoutesData() throws Exception {
+    public static Object[][] provideRoutesData() throws Exception {
         List<Object[]> routes = new ArrayList<>();
 
-        InputStream is = getClass().getClassLoader().getResourceAsStream("testdata/routes.csv");
+        InputStream is = CsvDataProvider.class.getClassLoader().getResourceAsStream("testdata/routes.csv");
         if (is == null) {
             throw new RuntimeException("CSV file not found on classpath: testdata/routes.csv");
         }

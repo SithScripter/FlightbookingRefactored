@@ -86,6 +86,78 @@ public class EndToEndBookingTest extends BaseTest {
     }
 
     /**
+     * Verifies the successful end-to-end booking of a flight using data from a CSV
+     * file.
+     * This test proves the framework is data-source agnostic — same Passenger
+     * record,
+     * same booking flow, different ingestion path (CSV manual parsing vs JSON Gson
+     * deserialization).
+     * Included in regression only — smoke uses the JSON provider for fast feedback.
+     *
+     * @param passenger A Passenger object containing all necessary data for one
+     *                  test run.
+     */
+    @Test(dataProvider = "passengerCsvData", dataProviderClass = CsvDataProvider.class, groups = {
+            "regression" }, testName = "Verify successful end-to-end booking using data from CSV")
+    public void testEndToEndBookingFromCsv(Passenger passenger) {
+        WebDriver driver = DriverManager.getDriver();
+        driver.get(ConfigReader.getApplicationUrl());
+        ExtentTest test = ExtentManager.getTest();
+
+        if (test != null) {
+            test.info("Navigated to: " + ConfigReader.getApplicationUrl());
+            test.info("Attempting booking for passenger (CSV): " + passenger.firstName() + " "
+                    + passenger.lastName() +
+                    " from " + passenger.origin() + " to " + passenger.destination());
+        }
+        logger.info("Starting flight booking (CSV) for passenger: {} {} from {} to {}",
+                passenger.firstName(), passenger.lastName(), passenger.origin(),
+                passenger.destination());
+
+        HomePage homePage = new HomePage(driver);
+        Assert.assertTrue(homePage.isHomePageDisplayed(), "Home page is not displayed!");
+        homePage.findFlights(passenger.origin(), passenger.destination());
+
+        FlightSelectionPage flightSelectionPage = new FlightSelectionPage(driver);
+        Assert.assertTrue(flightSelectionPage.isFlightSelectionPageDisplayed(),
+                "Flight Selection Page is not displayed!");
+        flightSelectionPage.clickChooseFlightButton();
+
+        PurchasePage purchasePage = new PurchasePage(driver);
+        Assert.assertTrue(purchasePage.isPurchasePageDisplayed(), "Purchase Page is not displayed!");
+        purchasePage.fillPurchaseForm(passenger);
+        purchasePage.clickPurchaseFlightButton();
+
+        ConfirmationPage confirmationPage = new ConfirmationPage(driver);
+        Assert.assertTrue(confirmationPage.isConfirmationPageDisplayed(),
+                "Confirmation page is not displayed!");
+
+        String thankYouMessage = confirmationPage.getThankYouMessage();
+        Assert.assertEquals(thankYouMessage, "Thank you for your purchase today!",
+                "Thank you message mismatch!");
+
+        String confirmationId = confirmationPage.getConfirmationId();
+        Assert.assertNotNull(confirmationId, "Confirmation ID should not be null!");
+        Assert.assertFalse(confirmationId.isEmpty(), "Confirmation ID should not be empty!");
+
+        String totalAmount = confirmationPage.getTotalAmount();
+        Assert.assertNotNull(totalAmount, "Total amount should not be null!");
+        Assert.assertFalse(totalAmount.isEmpty(), "Total amount should not be empty!");
+
+        String screenshotPath = ScreenshotUtils.captureScreenshot(driver, "booking_success_" + confirmationId);
+
+        if (test != null) {
+            test.pass("Flight booking (CSV) successful for: " + passenger.firstName() + " "
+                    + passenger.lastName());
+            test.info("Confirmation ID: " + confirmationId);
+            test.info("Total Amount: " + totalAmount);
+            test.addScreenCaptureFromPath("../screenshots/" + new java.io.File(screenshotPath).getName());
+        }
+        logger.info("Flight booking (CSV) completed for passenger: {} {}", passenger.firstName(),
+                passenger.lastName());
+    }
+
+    /**
      * Verifies flight search for all valid routes from CSV data.
      * This test is data-driven, running for each route pair in routes.csv.
      *

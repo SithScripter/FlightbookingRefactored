@@ -1,5 +1,6 @@
 package com.demo.flightbooking.tests.booking;
 
+import com.demo.flightbooking.pages.ConfirmationPage;
 import net.datafaker.Faker;
 import org.openqa.selenium.WebDriver;
 import org.testng.Assert;
@@ -14,7 +15,6 @@ import com.demo.flightbooking.tests.base.BaseTest;
 import com.demo.flightbooking.utils.ConfigReader;
 import com.demo.flightbooking.utils.DriverManager;
 import com.demo.flightbooking.utils.ExtentManager;
-import com.demo.flightbooking.utils.WebDriverUtils;
 
 import java.util.Random;
 
@@ -75,6 +75,11 @@ public class PurchaseFormValidationTest extends BaseTest {
         ));
 
         purchasePage.clickPurchaseFlightButton();
+
+        // Synchronization: wait for page navigation to settle before checking URL.
+        // BlazeDemo has no server-side validation, so it always redirects.
+        ConfirmationPage confirmationPage = new ConfirmationPage(driver);
+        confirmationPage.isConfirmationPageDisplayed();
 
         // Assert that purchase failed: should remain on purchase page or show error
         boolean stillOnPurchase = driver.getCurrentUrl().contains("/purchase.php");
