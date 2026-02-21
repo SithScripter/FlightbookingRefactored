@@ -102,7 +102,7 @@ public class BaseTest {
             reports.setSystemInfo("Java Version", System.getProperty("java.version"));
             extentReports.set(reports);
 
-            classLogger.info("✅ Report will be generated at: {}/{}", reportPath, reportFileName);
+            classLogger.info("✅ Report will be generated at: {}{}", reportPath, reportFileName);
         }
     }
 
