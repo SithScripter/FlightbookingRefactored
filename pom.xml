@@ -24,7 +24,6 @@
         <maven.compiler.version>3.13.0</maven.compiler.version>
         <maven.surefire.version>3.3.1</maven.surefire.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <rest-assured.version>5.4.0</rest-assured.version>
     </properties>
 
     <dependencies>
@@ -103,14 +102,6 @@
             <groupId>net.datafaker</groupId>
             <artifactId>datafaker</artifactId>
             <version>${datafaker.version}</version>
-            <scope>test</scope>
-        </dependency>
-
-        <!-- API Testing -->
-        <dependency>
-            <groupId>io.rest-assured</groupId>
-            <artifactId>rest-assured</artifactId>
-            <version>${rest-assured.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

@@ -1,4 +1,4 @@
-@Library('my-automation-library@v1.0.0') _
+@Library('my-automation-library@v1.1.0') _
 
 def branchConfig = getBranchConfig()
 
@@ -104,7 +104,7 @@ options {
                                         cleanWs()
                                         checkout scm
                                         sh script: "${mvnBase} -Dbrowser=chrome -Dreport.dir=chrome -Dproject.build.directory=target-chrome", returnStatus: true
-                                        stash name: 'chrome-artifacts', includes: 'reports/**, **/surefire-reports/**, **/regression-failure-summary.txt', allowEmpty: true
+                                        stash name: 'chrome-artifacts', includes: 'reports/**, **/surefire-reports/**, **/*-failure-summary.txt', allowEmpty: true
                                     }
                                 },
                                 Firefox: {
@@ -112,7 +112,7 @@ options {
                                         cleanWs()
                                         checkout scm
                                         sh script: "${mvnBase} -Dbrowser=firefox -Dreport.dir=firefox -Dproject.build.directory=target-firefox", returnStatus: true
-                                        stash name: 'firefox-artifacts', includes: 'reports/**, **/surefire-reports/**, **/regression-failure-summary.txt', allowEmpty: true
+                                        stash name: 'firefox-artifacts', includes: 'reports/**, **/surefire-reports/**, **/*-failure-summary.txt', allowEmpty: true
                                     }
                                 }
                             )

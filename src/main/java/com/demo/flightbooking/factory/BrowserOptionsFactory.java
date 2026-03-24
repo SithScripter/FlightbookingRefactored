@@ -22,6 +22,10 @@ public class BrowserOptionsFactory {
 
     private static final Logger logger = LogManager.getLogger(BrowserOptionsFactory.class);
 
+    private BrowserOptionsFactory() {
+        // Utility class — prevent instantiation
+    }
+
     /**
      * Gets the browser-specific capabilities.
      * It sets up the appropriate driver using WebDriverManager and configures
@@ -35,7 +39,6 @@ public class BrowserOptionsFactory {
 
     public static MutableCapabilities getOptions(BrowserType browserType, boolean isHeadless) {
 
-        isHeadless = Boolean.parseBoolean(ConfigReader.getProperty("browser.headless", "false"));
         logger.info("Headless mode for {}: {}", browserType, isHeadless);
 
         boolean useGrid = Boolean.parseBoolean(ConfigReader.getProperty("selenium.grid.enabled", "true"));
@@ -78,7 +81,6 @@ public class BrowserOptionsFactory {
                 }
                 EdgeOptions edgeOptions = new EdgeOptions();
                 edgeOptions.addArguments("--start-maximized");
-                edgeOptions.addArguments("--inprivate");
 
                 if (isHeadless) {
                     logger.info("✅ Enabling headless mode for EDGE");
