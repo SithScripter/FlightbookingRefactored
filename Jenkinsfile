@@ -1,4 +1,4 @@
-@Library('my-automation-library@v1.1.0') _
+@Library('my-automation-library@v1.2.0') _
 
 def branchConfig = getBranchConfig()
 
@@ -217,8 +217,8 @@ post {
                     def previousResult = currentBuild.previousBuild?.result ?: 'SUCCESS'
 
                     if (currentResult == 'UNSTABLE' || currentResult == 'FAILURE') {
-                        if (currentResult != previousResult) {
-                            echo "✅ Build status changed to ${currentResult}. Sending notification."
+                        if (env.BRANCH_NAME in branchConfig.productionCandidateBranches || currentResult != previousResult) {
+                            echo "✅ Sending notification for build status: ${currentResult}."
                             try {
                                 sendBuildSummaryEmail(
                                     suiteName: env.SUITE_TO_RUN,
