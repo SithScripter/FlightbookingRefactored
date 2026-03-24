@@ -1,5 +1,6 @@
 package com.demo.flightbooking.tests.booking;
 
+import com.demo.flightbooking.pages.ConfirmationPage;
 import net.datafaker.Faker;
 import org.openqa.selenium.WebDriver;
 import org.testng.Assert;
@@ -14,7 +15,6 @@ import com.demo.flightbooking.tests.base.BaseTest;
 import com.demo.flightbooking.utils.ConfigReader;
 import com.demo.flightbooking.utils.DriverManager;
 import com.demo.flightbooking.utils.ExtentManager;
-import com.demo.flightbooking.utils.WebDriverUtils;
 
 import java.util.Random;
 
@@ -35,7 +35,6 @@ public class PurchaseFormValidationTest extends BaseTest {
         )
     public void testPurchaseWithInvalidData() {
         WebDriver driver = DriverManager.getDriver();
-        WebDriverUtils webDriverUtils = new WebDriverUtils(driver, ConfigReader.getPropertyAsInt("test.timeout"));
         driver.get(ConfigReader.getApplicationUrl());
         ExtentTest test = ExtentManager.getTest();
 
@@ -46,19 +45,17 @@ public class PurchaseFormValidationTest extends BaseTest {
 
         // Hardcode valid flight selection: Paris to Rome
         HomePage homePage = new HomePage(driver);
+        Assert.assertTrue(homePage.isHomePageDisplayed(), "Home page is not displayed!");
         homePage.findFlights("Paris", "Rome");
 
-        boolean urlContainsReserve = webDriverUtils.waitUntilUrlContains("/reserve.php");
-        Assert.assertTrue(urlContainsReserve, "Did not navigate to reserve page!");
-
         FlightSelectionPage flightSelectionPage = new FlightSelectionPage(driver);
+        Assert.assertTrue(flightSelectionPage.isFlightSelectionPageDisplayed(),
+                "Flight Selection Page is not displayed!");
         flightSelectionPage.clickChooseFlightButton();
-
-        boolean urlContainsPurchase = webDriverUtils.waitUntilUrlContains("/purchase.php");
-        Assert.assertTrue(urlContainsPurchase, "Did not navigate to purchase page!");
 
         // Create invalid passenger data using DataFaker
         PurchasePage purchasePage = new PurchasePage(driver);
+        Assert.assertTrue(purchasePage.isPurchasePageDisplayed(), "Purchase Page is not displayed!");
         purchasePage.fillPurchaseForm(new Passenger(
             "Paris",
             "Rome",
@@ -78,6 +75,11 @@ public class PurchaseFormValidationTest extends BaseTest {
         ));
 
         purchasePage.clickPurchaseFlightButton();
+
+        // Synchronization: wait for page navigation to settle before checking URL.
+        // BlazeDemo has no server-side validation, so it always redirects.
+        ConfirmationPage confirmationPage = new ConfirmationPage(driver);
+        confirmationPage.isConfirmationPageDisplayed();
 
         // Assert that purchase failed: should remain on purchase page or show error
         boolean stillOnPurchase = driver.getCurrentUrl().contains("/purchase.php");

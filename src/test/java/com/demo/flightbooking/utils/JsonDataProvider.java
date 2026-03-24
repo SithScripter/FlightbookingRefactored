@@ -24,7 +24,7 @@ public class JsonDataProvider {
      * It uses Gson to deserialize the JSON array into a list of Passenger objects.
      *
      * @return A 2D Object array where each inner array contains a single Passenger
-     *         object.
+     * object.
      */
     @DataProvider(name = "passengerData")
     public static Object[][] getPassengerData() throws Exception {
@@ -33,13 +33,12 @@ public class JsonDataProvider {
         }.getType();
 
         // Use getResourceAsStream for classpath resources
-        try (InputStream is = JsonDataProvider.class.getClassLoader().getResourceAsStream(JSON_FILE);
-                InputStreamReader reader = new InputStreamReader(is)) {
+        InputStream is = JsonDataProvider.class.getClassLoader().getResourceAsStream(JSON_FILE);
+        if (is == null) {
+            throw new RuntimeException("JSON file not found on classpath: " + JSON_FILE);
+        }
 
-            if (is == null) {
-                throw new RuntimeException("JSON file not found on classpath: " + JSON_FILE);
-            }
-
+        try (InputStreamReader reader = new InputStreamReader(is)) {
             Passenger[] passengers = gson.fromJson(reader, type);
 
             Object[][] data = new Object[passengers.length][1];

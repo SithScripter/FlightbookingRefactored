@@ -44,4 +44,23 @@ public final class MaskingUtil {
 
         return sb.toString();
     }
+
+    /**
+     * Masks any sensitive value for safe logging, showing only the last 4
+     * characters.
+     * Unlike {@link #maskCardNumber(String)}, this does NOT strip non-digit
+     * characters,
+     * making it suitable for passwords, CVVs, and any arbitrary sensitive text.
+     * Example: "5555666677778888" becomes "************8888"
+     * Example: "MyP@ssw0rd!" becomes "*******0rd!"
+     *
+     * @param value The sensitive value to mask.
+     * @return A masked version of the value, or "****" if null/short.
+     */
+    public static String maskSensitiveValue(String value) {
+        if (value == null || value.length() <= 4) {
+            return "****";
+        }
+        return "*".repeat(value.length() - 4) + value.substring(value.length() - 4);
+    }
 }

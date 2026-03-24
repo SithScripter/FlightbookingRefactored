@@ -9,7 +9,6 @@ import com.demo.flightbooking.utils.ConfigReader;
 import org.openqa.selenium.StaleElementReferenceException;
 import org.openqa.selenium.ElementClickInterceptedException;
 import org.openqa.selenium.TimeoutException;
-import org.openqa.selenium.WebDriverException;
 import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.ElementNotInteractableException;
 
@@ -33,34 +32,38 @@ import java.util.concurrent.ConcurrentHashMap;
 public class RetryAnalyzer implements IRetryAnalyzer {
 
     private static final Logger logger = LogManager.getLogger(RetryAnalyzer.class);
-    private static final int maxRetryCount = ConfigReader.getPropertyAsInt("test.retry.maxcount");
+    private static final int MAX_RETRY_COUNT = ConfigReader.getPropertyAsInt("test.retry.maxcount");
 
     // Track retries per-method-invocation (handles DataProvider and parallelism)
     private static final Map<String, Integer> retryCounts = new ConcurrentHashMap<>();
 
     // Infrastructure/timing exceptions that benefit from retry
+    // RULE: Only include exceptions where "running again can fix the problem"
     private static final Set<Class<? extends Throwable>> RETRYABLE_EXCEPTIONS = new HashSet<>(
             Arrays.asList(
                     StaleElementReferenceException.class, // DOM changes during execution
                     ElementClickInterceptedException.class, // UI element blocking
                     TimeoutException.class, // Network/timing issues
-                    WebDriverException.class, // Browser/driver issues
                     NoSuchElementException.class, // Element loading timing
-                    ElementNotInteractableException.class, // UI state timing
-                    org.openqa.selenium.NoSuchSessionException.class, // Session issues
-                    org.openqa.selenium.SessionNotCreatedException.class // Browser startup
+                    ElementNotInteractableException.class // UI state timing
             ));
 
-    // Application/logic exceptions that should NOT be retried
+    // Application/logic exceptions and Session-level failures that should NOT be retried
+    // RULE: Session/browser is dead OR it's a code bug — retry cannot help
     private static final Set<Class<? extends Throwable>> NON_RETRYABLE_EXCEPTIONS = new HashSet<>(
             Arrays.asList(
+                    // Code/Logic issues
                     AssertionError.class, // Test logic failures
                     IllegalArgumentException.class, // Code issues
                     NullPointerException.class, // Programming errors
                     ClassCastException.class, // Type issues
                     NoSuchMethodException.class, // Missing methods
                     IndexOutOfBoundsException.class, // Data issues
-                    IllegalStateException.class // State issues
+                    IllegalStateException.class, // State issues
+                    // Session/Browser killers — retry cannot help
+                    org.openqa.selenium.NoSuchSessionException.class, // Browser is dead
+                    org.openqa.selenium.SessionNotCreatedException.class, // Browser couldn't start
+                    org.openqa.selenium.NoSuchWindowException.class // Window is closed
             ));
 
     @Override
@@ -72,7 +75,7 @@ public class RetryAnalyzer implements IRetryAnalyzer {
         Throwable throwable = result.getThrowable();
 
         // Check for max retries with null-safe logging
-        if (currentRetryCount >= maxRetryCount) {
+        if (currentRetryCount >= MAX_RETRY_COUNT) {
             logFailure(result.getMethod().getMethodName(),
                     (throwable != null) ? throwable.getClass().getSimpleName() : "N/A",
                     "max retries reached");
@@ -161,7 +164,7 @@ public class RetryAnalyzer implements IRetryAnalyzer {
     private void logDecision(String testMethod, String exceptionType, int attemptCount, String reason) {
         String status = attemptCount > 0 ? "🔄 RETRY" : "🔴 SKIP";
         logger.info("[{}] {} - {} ({}, attempt {}/{})",
-                testMethod, reason, exceptionType, status, attemptCount + 1, maxRetryCount + 1);
+                testMethod, reason, exceptionType, status, attemptCount + 1, MAX_RETRY_COUNT + 1);
     }
 
     /**

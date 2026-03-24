@@ -12,7 +12,7 @@ import static org.hamcrest.Matchers.equalTo;
 
 public class SampleApiTest extends ApiBaseTest {
 
-    @Test(description = "Perform a sample API test to demonstrate API testing capability.")
+    @Test(groups = { "regression" }, description = "Perform a sample API test to demonstrate API testing capability.")
     public void sampleApiTest() {
         ExtentTest test = ExtentManager.getTest();
         if (test != null) {

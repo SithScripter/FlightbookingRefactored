@@ -14,7 +14,7 @@ import java.util.List;
  * This class contains WebElements and methods to interact with the flight
  * search functionality.
  */
-public class HomePage extends BasePage { // Extend BasePage
+public class HomePage extends BasePage {
 
     // Locators
     private final By departFromDropdown = By.name("fromPort");
@@ -32,6 +32,18 @@ public class HomePage extends BasePage { // Extend BasePage
         super(driver);
         this.webDriverUtils = new WebDriverUtils(driver, ConfigReader.getPropertyAsInt("test.timeout"));
         logger.info("HomePage initialized.");
+    }
+
+    /**
+     * Verifies that the Home page is displayed by checking
+     * if the departure dropdown is visible.
+     *
+     * @return true if the departure dropdown is displayed.
+     */
+    public boolean isHomePageDisplayed() {
+        boolean isDisplayed = webDriverUtils.isElementDisplayed(departFromDropdown);
+        logger.info("Home page displayed: {}", isDisplayed);
+        return isDisplayed;
     }
 
     /**
