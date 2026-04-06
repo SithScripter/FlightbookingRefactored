@@ -21,6 +21,7 @@
         <commonsio.version>2.19.0</commonsio.version>
         <opencsv.version>5.11.2</opencsv.version>
         <extent.version>5.1.2</extent.version>
+        <langchain4j.version>1.12.2</langchain4j.version>
         <maven.compiler.version>3.13.0</maven.compiler.version>
         <maven.surefire.version>3.3.1</maven.surefire.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -102,6 +103,33 @@
             <groupId>net.datafaker</groupId>
             <artifactId>datafaker</artifactId>
             <version>${datafaker.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- ============================================ -->
+        <!-- AI Integration (LangChain4j)                 -->
+        <!-- ============================================ -->
+        <!-- LangChain4j core — AI Services, structured output -->
+        <dependency>
+            <groupId>dev.langchain4j</groupId>
+            <artifactId>langchain4j</artifactId>
+            <version>${langchain4j.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- LangChain4j Ollama — local LLM (default for dev) -->
+        <dependency>
+            <groupId>dev.langchain4j</groupId>
+            <artifactId>langchain4j-ollama</artifactId>
+            <version>${langchain4j.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- LangChain4j OpenAI — cloud LLM (optional, for prod quality) -->
+        <dependency>
+            <groupId>dev.langchain4j</groupId>
+            <artifactId>langchain4j-open-ai</artifactId>
+            <version>${langchain4j.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
