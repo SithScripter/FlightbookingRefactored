@@ -1,4 +1,4 @@
-@Library('my-automation-library@v1.3.0') _
+@Library('my-automation-library@main') _
 
 def branchConfig = getBranchConfig()
 
