@@ -1,4 +1,4 @@
-@Library('my-automation-library@v1.2.0') _
+@Library('my-automation-library@v1.3.0') _
 
 def branchConfig = getBranchConfig()
 
@@ -174,6 +174,15 @@ post {
                         }
                     } else {
                         echo "✅ Quality Gate Passed"
+                    }
+
+                    // === AI FAILURE ANALYSIS (Phase 5 — Layer 3) ===
+                    // Runs AFTER quality gate — advisory only, never blocks build
+                    // Only on branches configured in getBranchConfig().aiAnalysisBranches
+                    if (env.BRANCH_NAME in branchConfig.aiAnalysisBranches) {
+                        analyzeFailuresWithAi()
+                    } else {
+                        echo "ℹ️ AI Failure Analysis: Disabled for branch '${env.BRANCH_NAME}'"
                     }
 
                     echo "Stashing reports for notification step."
