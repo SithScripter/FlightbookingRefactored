@@ -36,13 +36,7 @@ public final class MaskingUtil {
         }
 
         // Create a dynamic-length mask
-        StringBuilder sb = new StringBuilder(len);
-        for (int i = 0; i < len - 4; i++) {
-            sb.append('*');
-        }
-        sb.append(digitsOnly.substring(len - 4));
-
-        return sb.toString();
+        return "*".repeat(len - 4) + digitsOnly.substring(len - 4);
     }
 
     /**
@@ -62,5 +56,41 @@ public final class MaskingUtil {
             return "****";
         }
         return "*".repeat(value.length() - 4) + value.substring(value.length() - 4);
+    }
+
+    /**
+     * Masks sensitive data patterns in raw log content before sending to AI providers.
+     * This is the DATA PRIVACY step in the AI failure analysis pipeline:
+     *   Raw logs → maskLogContent() → Masked logs → LLM
+     *
+     * Applies regex-based masking for:
+     * - Credit card numbers (13-19 consecutive digit sequences)
+     * - CVV/CVC patterns (3-4 digits following cvv/cvc keywords)
+     * - API keys and tokens (long alphanumeric strings following key/token/secret keywords)
+     *
+     * Design decision: We prefer over-masking over the risk of data exposure.
+     * Our log timestamps use separators (2026-04-06 16:14:38.417) so they
+     * don't match \b\d{13,19}\b. False positives are rare in practice.
+     *
+     * @param logContent Raw log text to mask.
+     * @return Log text with sensitive patterns replaced, or null/empty if input is null/empty.
+     */
+    public static String maskLogContent(String logContent) {
+        if (logContent == null || logContent.isEmpty()) {
+            return logContent;
+        }
+
+        String masked = logContent;
+
+        // Mask credit card number patterns (13-19 consecutive digits)
+        masked = masked.replaceAll("\\b\\d{13,19}\\b", "****-****-****-****");
+
+        // Mask CVV/CVC patterns (3-4 digits after cvv/cvc keyword)
+        masked = masked.replaceAll("(?i)(cvv|cvc|security.?code)[=:\\s]+\\d{3,4}", "$1=****");
+
+        // Mask potential API keys (long hex/alphanumeric after key/token/secret)
+        masked = masked.replaceAll("(?i)(api.?key|token|secret)[=:\\s]+[\\w-]{20,}", "$1=****");
+
+        return masked;
     }
 }
