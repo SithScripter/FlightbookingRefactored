@@ -1,5 +1,7 @@
-package com.demo.flightbooking.utils;
+package com.demo.flightbooking.ai;
 
+import com.demo.flightbooking.utils.ConfigReader;
+import com.demo.flightbooking.utils.MaskingUtil;
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.ollama.OllamaChatModel;
 import dev.langchain4j.model.openai.OpenAiChatModel;
@@ -19,7 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * AI-powered failure analyzer for the Flight Booking framework (Phase 4).
+ * AI-powered failure analyzer for the Flight Booking framework.
  *
  * WHAT IT DOES:
  * - Reads Surefire XML report (testng-results.xml) for test results
@@ -38,7 +40,7 @@ import java.util.List;
  * - POST-EXECUTION utility — runs AFTER tests complete, never during
  * - Zero impact on test performance, stability, or parallel execution
  * - Advisory only — output is a report, not a pass/fail decision
- * - Same ChatModel pattern as AiDataGenerator (Phase 3)
+ * - Same ChatModel pattern as AiDataGenerator
  * - If LLM is unavailable, tests still work — this is a supplementary tool
  *
  * DATA FLOW (v2 — structured preprocessing):
@@ -47,9 +49,9 @@ import java.util.List;
  *   Both → MaskingUtil → LLM (FailureAnalysisService) → Markdown Report
  *
  * USAGE:
- * - From IDE: Run FailureAnalysisDemo.main() or call AiFailureAnalyzer.analyze() directly
- * - From CLI: mvn exec:java -Dexec.mainClass="com.demo.flightbooking.utils.FailureAnalysisDemo"
- * - In CI: Phase 5 — Jenkins shared library step (analyzeFailuresWithAi.groovy)
+ * - From IDE: Run FailureAnalysisRunner.main() or call AiFailureAnalyzer.analyze() directly
+ * - From CLI: mvn exec:java -Dexec.mainClass="com.demo.flightbooking.ai.FailureAnalysisRunner"
+ * - In CI: Jenkins shared library step (analyzeFailuresWithAi.groovy)
  */
 public class AiFailureAnalyzer {
 
@@ -84,8 +86,8 @@ public class AiFailureAnalyzer {
      * Same pattern as AiDataGenerator.buildModel() — reuses same config keys.
      *
      * KEY DIFFERENCE: No Capability.RESPONSE_FORMAT_JSON_SCHEMA needed here.
-     * Phase 3 needs schema enforcement (structured JSON output).
-     * Phase 4 returns free-form markdown (interpretive analysis).
+     * Data generation needs schema enforcement (structured JSON output).
+     * Failure analysis returns free-form markdown (interpretive analysis).
      */
     private static ChatModel buildModel() {
         String provider = ConfigReader.getProperty("ai.provider", "ollama");
@@ -116,7 +118,7 @@ public class AiFailureAnalyzer {
                         .modelName(model)
                         .temperature(0.2)
                         .timeout(Duration.ofSeconds(300))
-                        // No .supportedCapabilities() — Phase 4 returns String, not JSON schema
+                        // No .supportedCapabilities() — failure analysis returns String, not JSON schema
                         .build();
             }
             default -> throw new IllegalArgumentException(

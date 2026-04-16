@@ -2,12 +2,10 @@ package com.demo.flightbooking.pages;
 
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
-
-import com.demo.flightbooking.utils.ConfigReader;
 import com.demo.flightbooking.utils.WebDriverUtils;
 
 /**
- * Represents the Confirmation Page of the BlazeDemo application.
+ * Represents the Confirmation Page of the flight booking application.
  * This page is displayed after a successful flight booking,
  * showing the confirmation ID and total amount paid.
  */
@@ -29,8 +27,8 @@ public class ConfirmationPage extends BasePage {
      */
     public ConfirmationPage(WebDriver driver) {
         super(driver);
-        this.webDriverUtils = new WebDriverUtils(driver, ConfigReader.getPropertyAsInt("test.timeout"));
-        logger.info("ConfirmationPage initialized");
+        this.webDriverUtils = new WebDriverUtils(driver, resolveTimeout());
+        logger.info("ConfirmationPage initialized.");
     }
 
     // ---Action Methods----

@@ -4,11 +4,24 @@
 FROM flight-booking-agent:latest
 
 # Override global Maven settings to prevent forced downloads
+USER root
 COPY cicd/settings.xml /usr/share/maven/conf/settings.xml
+
+# Set working directory for Maven operations
+WORKDIR /app
 
 # Copy the entire project context (respecting .dockerignore) to the image
 # This is necessary for the 'verify' phase to access source code for compilation
 COPY . .
 
-# This command forces Maven to resolve dependencies for all phases, including test plugins
-RUN mvn -B -P force-local-cache dependency:resolve-plugins dependency:go-offline surefire:test -Dtest=none
+# Preload ALL dependencies including surefire runtime provider (surefire-testng).
+# dependency:go-offline alone does NOT resolve surefire's runtime provider JARs —
+# they are loaded dynamically based on the detected test framework.
+# surefire:test -Dtest=none triggers provider resolution without executing tests.
+RUN mvn -B -P force-local-cache \
+    dependency:resolve-plugins \
+    dependency:go-offline \
+    surefire:test -Dtest=none -DfailIfNoTests=false
+
+# Drop root privileges after setup — least privilege principle
+USER 1000

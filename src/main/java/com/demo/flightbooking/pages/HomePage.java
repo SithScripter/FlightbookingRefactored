@@ -4,24 +4,24 @@ import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.Select;
-import com.demo.flightbooking.utils.ConfigReader;
 import com.demo.flightbooking.utils.WebDriverUtils;
 
 import java.util.List;
 
 /**
- * Represents the Home Page of the BlazeDemo application.
+ * Represents the Home Page of the flight booking application.
  * This class contains WebElements and methods to interact with the flight
  * search functionality.
  */
 public class HomePage extends BasePage {
 
+    // WebDriverUtils instance for robust interactions
+    private final WebDriverUtils webDriverUtils;
+
     // Locators
     private final By departFromDropdown = By.name("fromPort");
     private final By arriveAtDropdown = By.name("toPort");
     private final By findFlightsButton = By.cssSelector("input[type='submit']");
-
-    private final WebDriverUtils webDriverUtils;
 
     /**
      * Constructor for the HomePage.
@@ -30,7 +30,7 @@ public class HomePage extends BasePage {
      */
     public HomePage(WebDriver driver) {
         super(driver);
-        this.webDriverUtils = new WebDriverUtils(driver, ConfigReader.getPropertyAsInt("test.timeout"));
+        this.webDriverUtils = new WebDriverUtils(driver, resolveTimeout());
         logger.info("HomePage initialized.");
     }
 

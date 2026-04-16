@@ -1,41 +1,42 @@
-package com.demo.flightbooking.utils;
+package com.demo.flightbooking.ai;
 
+import com.demo.flightbooking.utils.ConfigReader;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.nio.file.Path;
 
 /**
- * CLI entry point for the AI Scenario Generator (Phase 6).
+ * CLI entry point for the AI Scenario Generator.
  *
- * Same pattern as AiDemo (Phase 3) and FailureAnalysisDemo (Phase 4):
+ * Same pattern as AiDataRunner and FailureAnalysisRunner:
  * - Simple main() method for running from IDE or CLI
- * - NOT a test class — this is a demonstration and productivity tool
+ * - NOT a test class — this is a standalone utility
  *
  * USAGE:
  *   # Mode 1 — PRD → Comprehensive (default):
  *   mvn exec:java \
- *     -Dexec.mainClass="com.demo.flightbooking.utils.ScenarioGeneratorDemo" \
+ *     -Dexec.mainClass="com.demo.flightbooking.ai.ScenarioGeneratorRunner" \
  *     -Dexec.classpathScope=test \
  *     -Dfeature="User can select departure and destination cities and search for flights"
  *
  *   # Mode 2 — Negative Testing:
  *   mvn exec:java \
- *     -Dexec.mainClass="com.demo.flightbooking.utils.ScenarioGeneratorDemo" \
+ *     -Dexec.mainClass="com.demo.flightbooking.ai.ScenarioGeneratorRunner" \
  *     -Dexec.classpathScope=test \
  *     -Dmode=negative \
  *     -Dfeature="Purchase page with 15-field passenger form"
  *
  *   # Mode 3 — Regression Suite:
  *   mvn exec:java \
- *     -Dexec.mainClass="com.demo.flightbooking.utils.ScenarioGeneratorDemo" \
+ *     -Dexec.mainClass="com.demo.flightbooking.ai.ScenarioGeneratorRunner" \
  *     -Dexec.classpathScope=test \
  *     -Dmode=regression \
  *     -Dfeature="Changed card number validation to accept 13-16 digits"
  */
-public class ScenarioGeneratorDemo {
+public class ScenarioGeneratorRunner {
 
-    private static final Logger logger = LogManager.getLogger(ScenarioGeneratorDemo.class);
+    private static final Logger logger = LogManager.getLogger(ScenarioGeneratorRunner.class);
 
     private static final String DEFAULT_FEATURE = """
         Flight Booking Purchase Page:
@@ -49,7 +50,7 @@ public class ScenarioGeneratorDemo {
 
     public static void main(String[] args) {
         logger.info("========================================");
-        logger.info("  AI Scenario Generator Demo (Phase 6)");
+        logger.info("  AI Scenario Generator Runner");
         logger.info("========================================");
 
         String mode = System.getProperty("mode", "prd");
@@ -86,7 +87,7 @@ public class ScenarioGeneratorDemo {
             logger.info("========================================");
 
         } catch (Exception e) {
-            logger.error("Demo failed: {}", e.getMessage(), e);
+            logger.error("Execution failed: {}", e.getMessage(), e);
             logger.info("========================================");
             logger.info("  Troubleshooting:");
             logger.info("  1. Is Ollama running? → ollama serve");

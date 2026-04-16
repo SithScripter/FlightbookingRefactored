@@ -18,3 +18,6 @@ RUN apt-get update && apt-get install -y docker-ce-cli
 # Install standalone docker-compose binary
 RUN curl -L "https://github.com/docker/compose/releases/download/v2.27.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
 RUN chmod +x /usr/local/bin/docker-compose
+
+# Drop root privileges after setup — least privilege principle
+USER 1000

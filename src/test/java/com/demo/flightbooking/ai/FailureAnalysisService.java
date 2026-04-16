@@ -1,4 +1,4 @@
-package com.demo.flightbooking.utils;
+package com.demo.flightbooking.ai;
 
 import dev.langchain4j.service.SystemMessage;
 import dev.langchain4j.service.UserMessage;
@@ -7,14 +7,14 @@ import dev.langchain4j.service.V;
 /**
  * LangChain4j AI Service interface for analyzing test failures.
  *
- * Same pattern as PassengerDataService (Phase 3):
+ * Same pattern as PassengerDataService:
  * - Interface with @SystemMessage/@UserMessage
  * - LangChain4j creates dynamic proxy at runtime via AiServices.create()
  * - Structured prompts with anti-hallucination constraints
  *
- * KEY DIFFERENCE from Phase 3:
- * - Phase 3 returns structured data (List<PassengerData>) → schema-enforced via JSON
- * - Phase 4 returns free-form analysis text (String) → prompt-guided format
+ * KEY DIFFERENCE from data generation:
+ * - Data generation returns structured data (List<PassengerData>) → schema-enforced via JSON
+ * - Failure analysis returns free-form analysis text (String) → prompt-guided format
  * Because failure analysis is interpretive, not schema-bound.
  * No Capability.RESPONSE_FORMAT_JSON_SCHEMA needed.
  *

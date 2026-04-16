@@ -1,4 +1,4 @@
-package com.demo.flightbooking.utils;
+package com.demo.flightbooking.ai;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -6,34 +6,35 @@ import org.apache.logging.log4j.Logger;
 import java.nio.file.Path;
 
 /**
- * CLI entry point for demonstrating the AI Failure Analyzer (Phase 4).
+ * CLI entry point for the AI Failure Analyzer.
  *
- * Same pattern as AiDemo (Phase 3):
+ * Same pattern as AiDataRunner:
  * - Simple main() method for running from IDE or CLI
  * - Shows the full pipeline: XML + logs → mask → LLM → report
- * - NOT a test class — this is a demonstration tool
+ * - NOT a test class — this is a standalone utility
  *
  * PREREQUISITES:
  * 1. Run tests first to generate surefire XML and logs:
- *    mvn test (or run from IDE — some tests are designed to fail)
+ * mvn test (or run from IDE — some tests are designed to fail)
  * 2. Ensure Ollama is running: ollama serve
  * 3. Ensure model is available: ollama pull llama3.2
  *
  * USAGE:
- * - From IDE: Right-click → Run FailureAnalysisDemo.main()
- * - From CLI: mvn exec:java -Dexec.mainClass="com.demo.flightbooking.utils.FailureAnalysisDemo"
+ * - From IDE: Right-click → Run FailureAnalysisRunner.main()
+ * - From CLI: mvn exec:java
+ * -Dexec.mainClass="com.demo.flightbooking.ai.FailureAnalysisRunner"
  *
  * OUTPUT:
  * - Generates target/failure-analysis-report.md
  * - Console shows pipeline progress and summary
  */
-public class FailureAnalysisDemo {
+public class FailureAnalysisRunner {
 
-    private static final Logger logger = LogManager.getLogger(FailureAnalysisDemo.class);
+    private static final Logger logger = LogManager.getLogger(FailureAnalysisRunner.class);
 
     public static void main(String[] args) {
         logger.info("========================================");
-        logger.info("  AI Failure Analysis Demo (Phase 4)");
+        logger.info("  AI Failure Analysis Runner");
         logger.info("========================================");
 
         try {
@@ -53,7 +54,7 @@ public class FailureAnalysisDemo {
                 logger.info("========================================");
             }
         } catch (Exception e) {
-            logger.error("Demo failed: {}", e.getMessage(), e);
+            logger.error("Execution failed: {}", e.getMessage(), e);
             logger.info("========================================");
             logger.info("  Troubleshooting:");
             logger.info("  1. Is Ollama running? → ollama serve");

@@ -1,4 +1,4 @@
-package com.demo.flightbooking.utils;
+package com.demo.flightbooking.ai;
 
 import dev.langchain4j.service.SystemMessage;
 import dev.langchain4j.service.UserMessage;
@@ -7,12 +7,12 @@ import dev.langchain4j.service.V;
 /**
  * LangChain4j AI Service interface for generating test scenarios.
  *
- * Same pattern as PassengerDataService (Phase 3) and FailureAnalysisService (Phase 4):
+ * Same pattern as PassengerDataService and FailureAnalysisService:
  * - Interface with @SystemMessage/@UserMessage
  * - LangChain4j creates dynamic proxy at runtime via AiServices.create()
  * - Anti-hallucination constraints embedded in every prompt
  *
- * KEY DIFFERENCES from Phase 3/4:
+ * KEY DIFFERENCES from data generation and failure analysis:
  * - Three methods (modes) instead of one — PRD, Negative, Regression
  * - Returns Markdown-formatted scenarios (interpretive, not schema-bound)
  * - Prompt includes framework context (4 pages, 2 existing test classes)

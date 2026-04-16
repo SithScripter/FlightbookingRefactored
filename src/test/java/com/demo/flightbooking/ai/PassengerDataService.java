@@ -1,4 +1,4 @@
-package com.demo.flightbooking.utils;
+package com.demo.flightbooking.ai;
 
 import dev.langchain4j.service.SystemMessage;
 import dev.langchain4j.service.UserMessage;

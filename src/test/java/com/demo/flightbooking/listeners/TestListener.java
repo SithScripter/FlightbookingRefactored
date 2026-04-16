@@ -47,21 +47,12 @@ public class TestListener implements ITestListener, IAnnotationTransformer {
 
 	@Override
 	public void onTestFailure(ITestResult result) {
-		// Check if this test has a retry analyzer and if it will retry
-		if (result.getMethod().getRetryAnalyzer(result) != null) {
-			try {
-				// Get the retry analyzer from our RetryAnalyzer class
-				com.demo.flightbooking.listeners.RetryAnalyzer retryAnalyzer = (com.demo.flightbooking.listeners.RetryAnalyzer) result
-						.getMethod().getRetryAnalyzer(result);
-
-				// If the analyzer will retry, suppress this failure report AND screenshot
-				if (retryAnalyzer.retry(result)) {
-					// Don't log to ExtentReports for intermediate failures AND don't capture
-					// screenshot
-					return; // Exit early - don't process this failure at all
-				}
-			} catch (ClassCastException e) {
-				// If it's not our retry analyzer, continue with normal processing
+		// Check if retry analyzer will retry this failure — suppress intermediate
+		// reports
+		Object analyzer = result.getMethod().getRetryAnalyzer(result);
+		if (analyzer instanceof RetryAnalyzer retryAnalyzer) {
+			if (retryAnalyzer.retry(result)) {
+				return; // Suppress intermediate failure — only report final attempt
 			}
 		}
 

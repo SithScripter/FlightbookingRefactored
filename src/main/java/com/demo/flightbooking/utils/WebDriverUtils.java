@@ -12,13 +12,13 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * A utility class providing robust explicit wait methods for Selenium.
- * Using explicit waits is a best practice that makes tests more stable and
- * reliable
- * by waiting for specific conditions to be met before proceeding, rather than
- * using fixed (and often brittle) sleeps.
+ * Centralized WebDriver interaction utilities with explicit wait strategies.
+ * All page objects delegate element interactions through this class for
+ * consistent timeout behavior.
  */
 public class WebDriverUtils {
+
+    private static final Logger staticLogger = LogManager.getLogger(WebDriverUtils.class);
 
     private final WebDriver driver;
     private final WebDriverWait wait;
@@ -110,7 +110,7 @@ public class WebDriverUtils {
             logger.info("Successfully clicked element: {}", locator);
         } catch (TimeoutException e) {
             logger.error("Element not clickable within timeout: {}", locator, e);
-            throw new ElementClickInterceptedException("Element not clickable: " + locator, e);
+            throw e;
         } catch (WebDriverException e) {
             logger.error("Error clicking element {}: {}", locator, e.getMessage(), e);
             throw e; // Re-throw other WebDriver exceptions
@@ -254,7 +254,8 @@ public class WebDriverUtils {
                 .until(ExpectedConditions.elementToBeClickable(locator));
         try {
             el.click();
-        } catch (RuntimeException e) {
+        } catch (ElementClickInterceptedException e) {
+            staticLogger.warn("Click intercepted for {}. Falling back to JS click. Reason: {}", locator, e.getMessage());
             ((JavascriptExecutor) driver).executeScript("arguments[0].click();", el);
         }
     }

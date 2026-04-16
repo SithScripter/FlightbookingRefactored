@@ -15,11 +15,11 @@ import com.demo.flightbooking.tests.base.BaseTest;
 
 /**
  * Contains the end-to-end test case for successfully booking a flight.
- * This test class demonstrates the complete user flow from searching for a
- * flight
- * to receiving a booking confirmation.
+ * End-to-end booking flow tests covering flight search through confirmation.
  */
 public class EndToEndBookingTest extends BaseTest {
+
+    private static final String EXPECTED_SUCCESS_MESSAGE = "Thank you for your purchase today!";
 
     /**
      * Verifies the successful end-to-end booking of a flight using data from a JSON
@@ -30,6 +30,10 @@ public class EndToEndBookingTest extends BaseTest {
      * @param passenger A Passenger object containing all necessary data for one
      *                  test run.
      */
+    // NOTE: The booking flow in this method is intentionally duplicated with testEndToEndBookingFromCsv.
+    // We validate that the SAME flow works identically across different data sources (JSON vs CSV).
+    // This ensures the framework is data-source agnostic and behaviorally consistent.
+    // Any divergence between these flows would indicate a data ingestion or parsing issue.
     @Test(dataProvider = "passengerData", dataProviderClass = JsonDataProvider.class, groups = { "regression", "smoke"},
             testName = "Verify successful end-to-end booking using data from JSON")
     public void testEndToEndBookingFromJson(Passenger passenger) {
@@ -50,7 +54,7 @@ public class EndToEndBookingTest extends BaseTest {
         homePage.findFlights(passenger.origin(), passenger.destination());
 
         FlightSelectionPage flightSelectionPage = new FlightSelectionPage(driver);
-        Assert.assertTrue(flightSelectionPage.isFlightSelectionPageDisplayed(),"Flight Selection Page is not displayed!");
+        Assert.assertTrue(flightSelectionPage.isFlightSelectionPageDisplayed(), "Flight Selection Page is not displayed!");
         flightSelectionPage.clickChooseFlightButton();
 
         PurchasePage purchasePage = new PurchasePage(driver);
@@ -62,7 +66,7 @@ public class EndToEndBookingTest extends BaseTest {
         Assert.assertTrue(confirmationPage.isConfirmationPageDisplayed(), "Confirmation page is not displayed!");
 
         String thankYouMessage = confirmationPage.getThankYouMessage();
-        Assert.assertEquals(thankYouMessage, "Thank you for your purchase today!","Thank you message mismatch!");
+        Assert.assertEquals(thankYouMessage, EXPECTED_SUCCESS_MESSAGE, "Thank you message mismatch!");
 
         String confirmationId = confirmationPage.getConfirmationId();
         Assert.assertNotNull(confirmationId, "Confirmation ID should not be null!");
@@ -97,6 +101,8 @@ public class EndToEndBookingTest extends BaseTest {
      * @param passenger A Passenger object containing all necessary data for one
      *                  test run.
      */
+    // NOTE: The booking flow in this method is intentionally duplicated with testEndToEndBookingFromJson.
+    // See comment above that method for rationale.
     @Test(dataProvider = "passengerCsvData", dataProviderClass = CsvDataProvider.class, groups = {
             "regression" }, testName = "Verify successful end-to-end booking using data from CSV")
     public void testEndToEndBookingFromCsv(Passenger passenger) {
@@ -129,12 +135,10 @@ public class EndToEndBookingTest extends BaseTest {
         purchasePage.clickPurchaseFlightButton();
 
         ConfirmationPage confirmationPage = new ConfirmationPage(driver);
-        Assert.assertTrue(confirmationPage.isConfirmationPageDisplayed(),
-                "Confirmation page is not displayed!");
+        Assert.assertTrue(confirmationPage.isConfirmationPageDisplayed(), "Confirmation page is not displayed!");
 
         String thankYouMessage = confirmationPage.getThankYouMessage();
-        Assert.assertEquals(thankYouMessage, "Thank you for your purchase today!",
-                "Thank you message mismatch!");
+        Assert.assertEquals(thankYouMessage, EXPECTED_SUCCESS_MESSAGE, "Thank you message mismatch!");
 
         String confirmationId = confirmationPage.getConfirmationId();
         Assert.assertNotNull(confirmationId, "Confirmation ID should not be null!");

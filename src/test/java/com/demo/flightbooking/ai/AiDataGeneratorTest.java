@@ -1,4 +1,4 @@
-package com.demo.flightbooking.utils;
+package com.demo.flightbooking.ai;
 
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -32,7 +32,7 @@ public class AiDataGeneratorTest {
 
     private static final String TEST_OUTPUT_FILE = "test-ai-output.csv";
     private static final Path TEST_OUTPUT_PATH =
-        Path.of("src", "test", "resources", "testdata", TEST_OUTPUT_FILE);
+            Path.of("src", "test", "resources", "testdata", TEST_OUTPUT_FILE);
 
     /**
      * Verifies that AiDataGenerator produces a valid CSV file with correct
@@ -45,16 +45,16 @@ public class AiDataGeneratorTest {
     public void testGenerateCsvProducesValidSchema() throws IOException {
         // Given: a generator with known test data (bypassing LLM)
         List<PassengerDataService.PassengerData> mockData = List.of(
-            new PassengerDataService.PassengerData(
-                "Paris", "Rome", "Test", "User", "123 Main St",
-                "TestCity", "TS", "12345", "Visa", "4111111111111111",
-                "06", "2027", "Test User", 30, "Male"
-            ),
-            new PassengerDataService.PassengerData(
-                "Boston", "London", "Edge", "Case", "456 Oak Ave",
-                "EdgeCity", "EC", "99999", "MasterCard", "5500000000000004",
-                "12", "2028", "Edge Case", 18, "Female"
-            )
+                new PassengerDataService.PassengerData(
+                        "Paris", "Rome", "Test", "User", "123 Main St",
+                        "TestCity", "TS", "12345", "Visa", "4111111111111111",
+                        "06", "2027", "Test User", 30, "Male"
+                ),
+                new PassengerDataService.PassengerData(
+                        "Boston", "London", "Edge", "Case", "456 Oak Ave",
+                        "EdgeCity", "EC", "99999", "MasterCard", "5500000000000004",
+                        "12", "2028", "Edge Case", 18, "Female"
+                )
         );
 
         // Write CSV manually using same logic as AiDataGenerator
@@ -62,15 +62,15 @@ public class AiDataGeneratorTest {
 
         // Verify: CSV file exists
         Assert.assertTrue(Files.exists(TEST_OUTPUT_PATH),
-            "Generated CSV file should exist at: " + TEST_OUTPUT_PATH);
+                "Generated CSV file should exist at: " + TEST_OUTPUT_PATH);
 
         // Verify: Header matches expected schema
         try (BufferedReader reader = new BufferedReader(new FileReader(TEST_OUTPUT_PATH.toFile()))) {
             String header = reader.readLine();
             Assert.assertEquals(header,
-                "origin,destination,firstName,lastName,address,city,state,zipCode," +
-                "cardType,cardNumber,month,year,cardName,age,gender",
-                "CSV header must match Passenger record schema");
+                    "origin,destination,firstName,lastName,address,city,state,zipCode," +
+                            "cardType,cardNumber,month,year,cardName,age,gender",
+                    "CSV header must match Passenger record schema");
 
             // Verify: Each data row has exactly 15 fields
             String line;
@@ -78,12 +78,12 @@ public class AiDataGeneratorTest {
             while ((line = reader.readLine()) != null) {
                 String[] fields = line.split(",", -1);
                 Assert.assertEquals(fields.length, 15,
-                    "Each CSV row must have exactly 15 fields. Row: " + line);
+                        "Each CSV row must have exactly 15 fields. Row: " + line);
                 rowCount++;
             }
 
             Assert.assertEquals(rowCount, mockData.size(),
-                "CSV should have exactly " + mockData.size() + " data rows");
+                    "CSV should have exactly " + mockData.size() + " data rows");
         }
 
         // Cleanup
@@ -98,11 +98,11 @@ public class AiDataGeneratorTest {
     public void testGeneratedCsvIsCompatibleWithPassengerRecord() throws IOException {
         // Given: mock data that represents valid AI output
         List<PassengerDataService.PassengerData> mockData = List.of(
-            new PassengerDataService.PassengerData(
-                "Portland", "Buenos Aires", "Maria", "O'Connor", "789 Pine Rd",
-                "Springfield", "IL", "62704", "American Express", "3714496353984312",
-                "01", "2026", "Maria O'Connor", 42, "Female"
-            )
+                new PassengerDataService.PassengerData(
+                        "Portland", "Buenos Aires", "Maria", "O'Connor", "789 Pine Rd",
+                        "Springfield", "IL", "62704", "American Express", "3714496353984312",
+                        "01", "2026", "Maria O'Connor", 42, "Female"
+                )
         );
 
         writeMockCsv(mockData);
@@ -138,13 +138,13 @@ public class AiDataGeneratorTest {
         Files.createDirectories(TEST_OUTPUT_PATH.getParent());
         try (var writer = new java.io.PrintWriter(new java.io.FileWriter(TEST_OUTPUT_PATH.toFile()))) {
             writer.println("origin,destination,firstName,lastName,address,city,state,zipCode," +
-                "cardType,cardNumber,month,year,cardName,age,gender");
+                    "cardType,cardNumber,month,year,cardName,age,gender");
             for (var p : data) {
                 writer.println(String.join(",",
-                    p.origin(), p.destination(), p.firstName(), p.lastName(),
-                    p.address(), p.city(), p.state(), p.zipCode(),
-                    p.cardType(), p.cardNumber(), p.month(), p.year(),
-                    p.cardName(), String.valueOf(p.age()), p.gender()
+                        p.origin(), p.destination(), p.firstName(), p.lastName(),
+                        p.address(), p.city(), p.state(), p.zipCode(),
+                        p.cardType(), p.cardNumber(), p.month(), p.year(),
+                        p.cardName(), String.valueOf(p.age()), p.gender()
                 ));
             }
         }

@@ -1,5 +1,6 @@
-package com.demo.flightbooking.utils;
+package com.demo.flightbooking.ai;
 
+import com.demo.flightbooking.utils.ConfigReader;
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.chat.Capability;
 import dev.langchain4j.model.ollama.OllamaChatModel;
@@ -43,8 +44,8 @@ import java.util.List;
  * still validated by the test assertions — not by the data generator.
  *
  * USAGE:
- * - From IDE: Run AiDemo.main() or call AiDataGenerator.generate() directly
- * - From CLI: mvn exec:java -Dexec.mainClass="com.demo.flightbooking.utils.AiDemo"
+ * - From IDE: Run AiDataRunner.main() or call AiDataGenerator.generate() directly
+ * - From CLI: mvn exec:java -Dexec.mainClass="com.demo.flightbooking.ai.AiDataRunner"
  * - In CI: Run as a pre-test data preparation step (optional, never blocking)
  */
 public class AiDataGenerator {

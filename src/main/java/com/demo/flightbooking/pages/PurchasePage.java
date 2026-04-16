@@ -1,13 +1,12 @@
 package com.demo.flightbooking.pages;
 
 import com.demo.flightbooking.model.Passenger;
-import com.demo.flightbooking.utils.ConfigReader;
 import com.demo.flightbooking.utils.WebDriverUtils;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 
 /**
- * Represents the Purchase Page of the BlazeDemo application.
+ * Represents the Purchase Page of the flight booking application.
  * This is the final step where the user enters their personal and payment
  * information to complete the booking.Encapsulates all elements and actions
  * available on this page.
@@ -16,6 +15,7 @@ public class PurchasePage extends BasePage {
 
     // WebDriverUtils for robust element interactions
     private final WebDriverUtils webDriverUtils;
+
     // --- Locators ---
     private final By firstNameInput = By.id("inputName");
     private final By addressInput = By.id("address");
@@ -32,12 +32,12 @@ public class PurchasePage extends BasePage {
 
     /**
      * Constructor for the PurchasePage.
-     * 
+     *
      * @param driver The WebDriver instance.
      */
     public PurchasePage(WebDriver driver) {
         super(driver);
-        this.webDriverUtils = new WebDriverUtils(driver, ConfigReader.getPropertyAsInt("test.timeout"));
+        this.webDriverUtils = new WebDriverUtils(driver, resolveTimeout());
         logger.info("PurchasePage initialized.");
     }
 

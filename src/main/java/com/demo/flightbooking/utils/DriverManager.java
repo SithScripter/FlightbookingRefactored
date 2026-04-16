@@ -6,7 +6,6 @@ import com.demo.flightbooking.factory.BrowserOptionsFactory;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
-import java.time.Duration;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -29,6 +28,10 @@ import org.openqa.selenium.remote.RemoteWebDriver;
  * preventing conflicts and instability during parallel runs.
  */
 public class DriverManager {
+
+    private DriverManager() {
+        // Utility class — prevent instantiation
+    }
 
     private static final Logger logger = LogManager.getLogger(DriverManager.class);
     /**
@@ -77,21 +80,21 @@ public class DriverManager {
                     String urlFormat = ConfigReader.getProperty("seleniumhub.urlFormat");
 
                     if (hubHost == null || hubHost.isEmpty()) {
-                        throw new RuntimeException("Missing hubHost or urlFormat in config.properties");
+                        throw new IllegalStateException("Missing hubHost or urlFormat in config.properties");
                     }
                     if (urlFormat == null || urlFormat.isEmpty()) {
-                        throw new RuntimeException("⚠️ seleniumhub.urlFormat property is missing in config.properties");
+                        throw new IllegalStateException("seleniumhub.urlFormat property is missing in config.properties");
                     }
 
                     String fullUrl = String.format(urlFormat, hubHost);
                     logger.info("Connecting to Selenium Grid at: {}", fullUrl);
 
-                    URL gridUrl = URI.create(fullUrl).toURL(); // Safe in Java 20+
+                    URL gridUrl = URI.create(fullUrl).toURL();
 
                     driver.set(new RemoteWebDriver(gridUrl, options));
                 } catch (MalformedURLException e) {
                     logger.error("❌ Malformed Selenium Grid URL: {}", e.getMessage());
-                    throw new RuntimeException("Invalid Selenium Grid URL", e);
+                    throw new IllegalStateException("Invalid Selenium Grid URL", e);
                 }
             } else {
                 // Local Mode

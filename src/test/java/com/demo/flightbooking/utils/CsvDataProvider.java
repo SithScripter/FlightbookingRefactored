@@ -10,8 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Provides test data to TestNG tests by reading from a CSV file.
- * This class demonstrates a data-driven approach using CSV as the data source.
+ * Provides passenger test data from CSV files for data-driven execution.
  */
 public class CsvDataProvider {
 

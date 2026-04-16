@@ -19,15 +19,17 @@ import com.demo.flightbooking.utils.ExtentManager;
 import java.util.Random;
 
 /**
- * Contains tests for purchase form validation using DataFaker for negative scenarios.
+ * Negative testing: submits invalid data to verify form validation behavior.
+ * Uses DataFaker for deterministic invalid inputs.
  */
 public class PurchaseFormValidationTest extends BaseTest {
 
     private static final Faker FAKER = new Faker(new Random(42L));
 
     /**
-     * Verifies that the purchase form correctly validates and rejects invalid data.
-     * Uses DataFaker to generate realistic but invalid inputs.
+     * Negative test: submits invalid data to verify form validation behavior.
+     * Uses DataFaker with a fixed seed for deterministic invalid inputs.
+     * Expected to fail against applications without server-side validation.
      */
     @Test(
             groups = {"regression"},
@@ -77,17 +79,17 @@ public class PurchaseFormValidationTest extends BaseTest {
         purchasePage.clickPurchaseFlightButton();
 
         // Synchronization: wait for page navigation to settle before checking URL.
-        // BlazeDemo has no server-side validation, so it always redirects.
         ConfirmationPage confirmationPage = new ConfirmationPage(driver);
         confirmationPage.isConfirmationPageDisplayed();
 
-        // Assert that purchase failed: should remain on purchase page or show error
+        // IMPORTANT: This assertion intentionally fails against the target application.
+        // The target application has no server-side validation — it accepts all input.
+        // The test validates expected behavior: invalid data SHOULD be rejected.
+        // Failure here exercises: RetryAnalyzer (NON_RETRYABLE), ScreenshotUtils,
+        // TestListener failure hooks, and testFailureIgnore pipeline continuation.
+        // Against a production app with proper validation, this assertion passes unchanged.
         boolean stillOnPurchase = driver.getCurrentUrl().contains("/purchase.php");
         Assert.assertTrue(stillOnPurchase, "Purchase should have failed with invalid data, but proceeded to confirmation");
 
-        if (test != null) {
-            test.pass("Purchase form correctly rejected invalid data");
-        }
-        logger.info("Purchase validation test completed - invalid data rejected as expected");
     }
 }
