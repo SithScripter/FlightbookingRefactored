@@ -32,21 +32,31 @@ buildNumber.properties
 logs/
 reports/
 test-output/
+screenshots/
+
+# Temp / local working directories
+temp/
+docs/
 
 # OS / Misc files
 .DS_Store
 Thumbs.db
 hs_err_pid*
 
-# Git metadata (not needed in image)
+# Git & GitHub metadata (not needed in image)
 .git/
 .gitignore
+.github/
 
 # Node (if any frontend part)
 node_modules/
 
-# Exclude Jenkinsfile and grid configs (optional but clean)
+# Docker / CI noise
 docker-compose.yml
 docker-compose-grid.yml
 docker-compose.override.yml
 Jenkinsfile
+
+# Documentation and text files (not needed for build)
+*.md
+*.txt
