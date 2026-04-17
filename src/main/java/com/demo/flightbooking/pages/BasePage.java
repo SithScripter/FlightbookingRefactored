@@ -14,7 +14,7 @@ import com.demo.flightbooking.utils.ConfigReader;
 public abstract class BasePage {
 
     protected WebDriver driver;
-    protected final Logger logger; // Logger for each page object
+    protected final Logger logger;
     private static final int DEFAULT_TIMEOUT = 10;
 
     /**

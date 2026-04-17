@@ -27,8 +27,7 @@ public record Passenger(
     String gender) {
 
     /**
-     * Custom toString() implementation that masks the credit card number.
-     * This is a critical security measure for compliance.
+     * Overrides toString() to mask sensitive data like credit card number.
      */
     @Override
     public String toString() {
@@ -42,7 +41,7 @@ public record Passenger(
                ", state='" + state + '\'' +
                ", zipCode='" + zipCode + '\'' +
                ", cardType='" + cardType + '\'' +
-               ", cardNumber='" + MaskingUtil.maskCardNumber(cardNumber) + '\'' +  // MASKED DATA
+               ", cardNumber='" + MaskingUtil.maskCardNumber(cardNumber) + '\'' +
                ", month='" + month + '\'' +
                ", year='" + year + '\'' +
                ", cardName='" + cardName + '\'' +
