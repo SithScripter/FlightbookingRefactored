@@ -8,16 +8,16 @@ Key principles:
 
 * **Configuration as code** (pipeline, Jenkins config, Docker)
 * **Reproducible builds** using Docker
-* **Fast execution** via pre-warmed build agents
-* **Scalable parallel testing** with Selenium Grid
+* **Optimized execution** via pre-warmed build agents
+* **Parallel cross-browser execution** using Selenium Grid
 * **Structured reporting & notifications**
 
 ## 2. Quick Start
 
 ```bash
-# 1.Local Jenkins Setup (Demo / Development Only)
+# 1. Local Jenkins Setup
 
-For local experimentation and demo purposes, Jenkins is started using Docker Compose
+For local development and validation, Jenkins is started using Docker Compose
 with a JCasC-enabled configuration:
 
 docker-compose -f docker-compose-green.yml up -d
@@ -27,7 +27,7 @@ including plugins, credentials, jobs, and system settings — with no manual UI 
 
 This local setup exists to:
 
-* Demonstrate full reproducibility
+* Validate full reproducibility
 * Ensure consistent Jenkins behavior across environments
 * Validate CI/CD behavior before pushing changes
 
@@ -125,6 +125,9 @@ Reusable pipeline logic is extracted into shared library functions:
 | `archiveAndPublishReports()` | Archive artifacts and publish HTML reports   |
 | `sendBuildSummaryEmail()` | Email notifications                             |
 | `updateQase()`            | Push results to Qase                            |
+| `analyzeFailuresWithAi()` | AI-powered failure root cause analysis (branch-gated, advisory-only) |
+
+AI analysis is advisory and non-blocking — it runs after the quality gate and does not affect pipeline success or failure.
 
 **Why Shared Library**
 
@@ -138,7 +141,7 @@ Reusable pipeline logic is extracted into shared library functions:
 
 ### Purpose
 
-Reduce build time and eliminate flaky dependency downloads.
+Reduce build time and eliminate flaky dependency downloads. Pre-warming also removes network dependencies during test execution, ensuring CI stability is not affected by repository availability.
 
 ### Strategy
 
@@ -184,6 +187,7 @@ Two layered Docker images:
 ### Design Highlights
 
 * Unique Docker network per pipeline run
+* Network lifecycle is deterministic: old containers and networks are torn down before each run to prevent stale connectivity issues
 * Controlled max sessions per browser
 * `/dev/shm` mounting to prevent browser crashes
 * Health checks before test execution
@@ -204,6 +208,9 @@ Two layered Docker images:
 
    * Chrome
    * Firefox
+
+   Parallelism is at the Jenkins pipeline stage level — each browser runs in its own Docker container simultaneously.
+
 4. Each browser:
 
    * Uses its own workspace
@@ -255,6 +262,7 @@ Two layered Docker images:
 | Secrets         | Externalized (not in repo)    |
 | Environments    | QA / Staging / Production     |
 | Branch behavior | Controlled via shared library |
+| Dependency updates | Dependabot (patch-only, weekly) — bot branches are implicitly excluded from pipeline via branch allowlist |
 
 ---
 
@@ -263,8 +271,8 @@ Two layered Docker images:
 * **Scalable:** Parallel browsers with isolated containers and networks
 * **Reliable:** Thread-safe execution with deterministic dependency resolution
 * **Maintainable:** Shared libraries and clear separation between pipeline orchestration and logic
-* **Production-style:** Configuration-driven and modular CI/CD design
-* **Future-ready:** Architecture allows evolution toward cloud-hosted agents or container orchestration without rewriting pipeline logic
+* **Production-grade:** Configuration-driven and modular CI/CD design
+* **Extensible:** Architecture supports evolution toward cloud-hosted agents or container orchestration without rewriting pipeline logic
 
 ---
 
@@ -298,6 +306,3 @@ Automated validation of test results to prevent broken code from progressing thr
 * Jenkins agent autoscaling to optimize CI resource usage
 * Quality gate enhancements (severity-aware thresholds, failure trend analysis)
 
----
-
-✅ **This CI/CD setup implements senior-level QA + DevOps best practices with professional-grade tooling.**

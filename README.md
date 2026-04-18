@@ -1,6 +1,6 @@
 # ✈️ Flight Booking Automation Framework
 
-A robust Selenium test automation framework designed for end-to-end testing of the BlazeDemo flight booking application. Built with **industry-standard patterns** for scalability, maintainability, and ease of use.
+A robust Selenium test automation framework designed for end-to-end testing of a flight booking web application. Built with **proven design patterns** for scalability, maintainability, and ease of use.
 
 ## ✨ Features
 
@@ -13,19 +13,26 @@ A robust Selenium test automation framework designed for end-to-end testing of t
 
 ### Testing Capabilities
 - Data-driven testing (JSON, CSV, DataFaker)
-- Cross-browser execution with parallelization where applicable
+- Cross-browser parallel execution via Jenkins pipeline stages and Selenium Grid
 - Intelligent retry mechanism for transient failures
+
+### AI Capabilities (Optional)
+- LLM-based test data generation with provider-agnostic design (Ollama/OpenAI)
+- AI-powered failure root cause analysis integrated into CI pipeline as an optional post-processing step
+- AI-driven test scenario generation
+
+These capabilities are non-blocking and do not affect core test execution.
 
 ### Execution & Infrastructure
 - Dockerized Selenium Grid with isolated networks
-- Multi-environment execution (QA/Staging/Production)
-- Jenkins CI/CD ready with shared library patterns
+- Config-driven environment execution (QA/Staging/Production)
+- Integrated Jenkins CI/CD pipeline using shared library architecture
 
 ### Reporting & Quality Gates
 - ExtentReports with screenshots and timelines
 - Consolidated HTML dashboards in CI/CD
 - Automated quality gates with configurable thresholds
-- Failure aggregation and smart notifications
+- Failure aggregation and status-change-based notifications
 
 ## 🚀 Getting Started
 
@@ -49,7 +56,7 @@ This is the recommended approach for running full test suites. These commands re
 
 **A) Local Execution (No Docker Grid)**
 
-This mode uses WebDriverManager to automatically manage browser drivers on your local machine. It's perfect for quick feedback during development.
+This mode runs tests on your local browser with automatic driver management. It's ideal for quick feedback during development.
 
 ```bash
 # Run the smoke suite on your local Chrome browser

@@ -23,7 +23,19 @@ This document outlines the policies, behaviors, and operational procedures for t
 
 - **smoke suite**: A small set of critical-path tests. Runs automatically on pushes to all branches.
 - **regression suite**: A comprehensive suite of all tests. Intended to be run on protected branches before a release.
-- **Parallel Execution**: Tests are automatically run in parallel across Chrome and Firefox to reduce execution time.
+- **Parallel Execution**: Cross-browser execution is achieved via Jenkins parallel stages, where each browser runs in a separate Docker container connected to the same Selenium Grid.
+
+### Pipeline Execution Flow
+
+1. **Determine Suite** — Selects smoke or regression based on branch and parameters
+2. **Initialize & Start Grid** — Creates isolated Docker network, starts Selenium Grid, validates health
+3. **Approval Gate** — Optional manual approval for regression on protected branches
+4. **Parallel Tests** — Chrome and Firefox execute simultaneously in separate containers
+5. **Report Aggregation** — Results from both browsers are merged and published
+6. **Quality Gate** — Evaluates aggregated test results against threshold
+7. **AI Analysis** — Optional, non-blocking failure analysis (branch-gated)
+8. **Notifications** — Email sent on status changes; Qase results published
+9. **Cleanup** — Grid shutdown, container removal, workspace cleanup (guaranteed)
 
 ## 3. Pipeline Features
 
@@ -52,10 +64,23 @@ The pipeline includes an automated quality gate that validates test results afte
   - **Protected branches** (main, enhancements): Exceeding threshold marks build as `FAILURE` (prevents bad merges)
 
 **Quality Gate Output Example:**
+
 ```
 📊 Quality Gate: 4/39 failures (threshold: 0)
 ⚠️ Quality Gate: Build marked UNSTABLE due to 4 failures
 ```
+
+Retry logic handles transient test failures during execution, while the quality gate evaluates final aggregated results to enforce build stability policies.
+
+### AI Failure Analysis (Optional)
+
+After the quality gate runs, the pipeline optionally invokes AI-assisted failure root cause analysis using `analyzeFailuresWithAi()` from the shared library. This feature:
+
+- **Branch-Gated**: Only runs on branches configured in `getBranchConfig().aiAnalysisBranches`
+- **Advisory Only**: Never blocks the build — runs after the quality gate decision
+- **LLM-Powered**: Uses LangChain4j with a configurable LLM provider (Ollama/OpenAI)
+
+When disabled for a branch, the pipeline logs: `ℹ️ AI Failure Analysis: Disabled for branch '<branch-name>'`
 
 ### Notifications
 
@@ -77,6 +102,7 @@ The pipeline includes several performance enhancements to balance speed and reli
 ### Pipeline Durability
 
 **Conditional durability settings:**
+
 - **Main branch:** `SURVIVABLE_NONATOMIC` - Balance of crash recovery and performance
 - **Feature branches:** `PERFORMANCE_OPTIMIZED` - Maximum speed, minimal metadata overhead
 
@@ -85,6 +111,7 @@ The pipeline includes several performance enhancements to balance speed and reli
 ### Build Retention
 
 **Automatic cleanup:**
+
 - Keeps last 5 builds per branch
 - Archives 0 artifacts (reports published to Jenkins UI only)
 - HTML reports: `keepAll=false` (only latest retained)
@@ -135,6 +162,7 @@ mvn clean test -Dbrowser=firefox -Dselenium.grid.enabled=false
 ### Shared Library
 
 The pipeline relies on a Jenkins Shared Library for reusable functions.
+
 - **Name**: `my-automation-library`
 
 ### Required Jenkins Credentials
@@ -167,11 +195,11 @@ The following credential IDs must be available in Jenkins for the pipeline to fu
 - **Explanation**: This is by design to enforce quality on protected branches.
 - **Action**: Fix the failing tests in feature branch before merging.
 
-#### 4. Random Docker/Network Errors
+#### 4. Docker/Network Errors
 
-- **Symptom**: The build fails with a random connection error or a Docker daemon error.
-- **Explanation**: This is likely a transient infrastructure issue.
-- **Action**: Use the "Replay" button in the Jenkins build to re-run the pipeline.
+- **Symptom**: The build fails with a connection error or a Docker daemon error.
+- **Explanation**: This can occur due to stale Docker networks or containers from previous runs. The pipeline enforces deterministic network lifecycle (teardown → create → connect) via `startDockerGrid()` to prevent this, but manual intervention may be needed if the cleanup stage was interrupted.
+- **Action**: Run `docker network prune` and `docker container prune` on the build agent, then re-run the pipeline.
 
 #### 5. Grid Connection Issues
 
