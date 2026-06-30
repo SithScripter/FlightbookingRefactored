@@ -14,7 +14,7 @@
         <selenium.version>4.26.0</selenium.version>
         <testng.version>7.10.2</testng.version>
         <webdrivermanager.version>6.1.0</webdrivermanager.version>
-        <jackson.version>2.18.0</jackson.version>
+        <jackson.version>2.22.0</jackson.version>
         <log4j.version>2.25.3</log4j.version>
         <commonsio.version>2.19.0</commonsio.version>
         <opencsv.version>5.11.2</opencsv.version>
